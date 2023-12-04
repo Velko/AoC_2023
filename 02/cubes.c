@@ -60,6 +60,8 @@ static int parse_line(char *line)
         }
     }
 
+    return max_red * max_green * max_blue;
+
     if (max_red <= 12 && max_green <= 13 && max_blue <= 14)
         return game_id;
 
