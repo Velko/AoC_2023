@@ -9,6 +9,8 @@
 char lines[BUFFER_SIZE][BUFFER_SIZE];
 
 static int parse_num(int col, int row);
+static void count_mul_n(int *count, int *ratio, int num);
+
 
 int main(void)
 {
@@ -27,28 +29,36 @@ int main(void)
     {
         for (const char *c = lines[row]; *c; ++c)
         {
-            if (*c != '.' && *c != '\n' && !isdigit(*c))
+            if (*c == '*')
             {
                 int col = c - lines[row];
-                printf("%c", *c);
+
+                int num_count = 0;
+                int ratio = 1;
 
                 int num = parse_num(col, row - 1);
-                total += num;
+                count_mul_n(&num_count, &ratio, num);
                 if (num == 0)
                 {
-                    total += parse_num(col - 1, row - 1);
-                    total += parse_num(col + 1, row - 1);
+                    count_mul_n(&num_count, &ratio, parse_num(col - 1, row - 1));
+                    count_mul_n(&num_count, &ratio, parse_num(col + 1, row - 1));
                 }
 
-                total += parse_num(col - 1, row);
-                total += parse_num(col + 1, row);
+                count_mul_n(&num_count, &ratio, parse_num(col - 1, row));
+                count_mul_n(&num_count, &ratio, parse_num(col + 1, row));
 
                 num = parse_num(col, row + 1);
-                total += num;
+                count_mul_n(&num_count, &ratio, num);
                 if (num == 0)
                 {
-                    total += parse_num(col - 1, row + 1);
-                    total += parse_num(col + 1, row + 1);
+                    count_mul_n(&num_count, &ratio, parse_num(col - 1, row + 1));
+                    count_mul_n(&num_count, &ratio, parse_num(col + 1, row + 1));
+                }
+
+                if (num_count == 2)
+                {
+                    printf("*%d*\n", ratio);
+                    total += ratio;
                 }
             }
         }
@@ -84,4 +94,14 @@ static int parse_num(int col, int row)
     printf(" %s ", digits);
 
     return atoi(digits);
+}
+
+
+static void count_mul_n(int *count, int *ratio, int num)
+{
+    if (num != 0)
+    {
+        ++(*count);
+        (*ratio) *= num;
+    }
 }
