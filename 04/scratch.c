@@ -30,7 +30,7 @@ int main(void)
 }
 
 
-static void parse_numbers(char *row, int *results);
+static int parse_numbers(char *row, int *results);
 
 static int parse_line(char *line)
 {
@@ -41,22 +41,35 @@ static int parse_line(char *line)
     int card_id;
     sscanf(card_token, "%*s %d", &card_id);
 
-    printf("C %d\n", card_id);
+    printf("C %d", card_id);
 
     card_token = strtok_r(NULL, "|", &outer_savep);
 
     int winning_numbers[N_WINNING];
-    parse_numbers(card_token, winning_numbers);
+    int n_winning = parse_numbers(card_token, winning_numbers);
 
 
     card_token = strtok_r(NULL, "|", &outer_savep);
     int guessed_numbers[N_GUESSES];
-    parse_numbers(card_token, guessed_numbers);
+    int n_guessed = parse_numbers(card_token, guessed_numbers);
 
-    return 0;
+    int card_score = 1;
+
+    for (int g = 0; g < n_guessed; ++g)
+    {
+        for (int w = 0; w < n_winning; ++w)
+        {
+            if (guessed_numbers[g] == winning_numbers[w])
+                card_score <<= 1;
+        }
+    }
+
+    printf("  %d\n", card_score >> 1);
+
+    return card_score >> 1;
 }
 
-static void parse_numbers(char *row, int *results)
+static int parse_numbers(char *row, int *results)
 {
     char *inner_savep;
     int count = 0;
@@ -68,5 +81,7 @@ static void parse_numbers(char *row, int *results)
         num_token = strtok_r(NULL, " ", &inner_savep);
     }
 
-    printf ("%d\n", count);
+    return count;
+
+//    printf ("%d\n", count);
 }
