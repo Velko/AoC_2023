@@ -3,8 +3,8 @@
 
 struct race
 {
-    int time;
-    int distance;
+    long time;
+    long distance;
 };
 
 
@@ -33,10 +33,10 @@ static int try_race(struct race *r)
 {
     int win_count = 0;
 
-    for (int t_load = 0; t_load < r->time; ++t_load)
+    for (long t_load = 0; t_load < r->time; ++t_load)
     {
-        int v = t_load;
-        int t_travel = r->time - t_load;
+        long v = t_load;
+        long t_travel = r->time - t_load;
 
         if (v * t_travel > r->distance)
             ++win_count;
