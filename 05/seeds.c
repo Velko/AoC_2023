@@ -72,6 +72,8 @@ int main(void)
         if (location < min_location) min_location = location;
     }
 
+    // sample result: 35
+    // real result: 261668924
     printf("Result: %ld\n", min_location);
 
     return 0;
