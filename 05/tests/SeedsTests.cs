@@ -40,11 +40,15 @@ humidity-to-location map:
     ";
     #endregion
     
+    LogTracer logTracer = new LogTracer();
+
     SeedLookup CreateSeedLookup()
     {
+        logTracer.RangesUsed.Clear();
         using var input = new StringReader(SampleInput);
-        return new SeedLookup(input);
+        return new SeedLookup(input, logTracer);
     }
+
     [Fact(Skip = "The ultimate integration test")]
     public void SampleInput_should_produce_expected_Location()
     {
@@ -64,5 +68,42 @@ humidity-to-location map:
             new SeedRange { Start = 79, Size = 14},
             new SeedRange { Start = 55, Size = 13},
         }, sut.seeds);
+    }
+
+    [Fact]
+    public void LookupExpectedSeed()
+    {
+        var sut = CreateSeedLookup();
+        sut.seeds.Clear();
+        sut.seeds.Add(new SeedRange { Start = 82, Size = 1});
+
+        var result = sut.SearchSmallestLocation();
+
+        Assert.Equal(46, result);
+        Assert.Equal(new[] { 50L, -1, -1, 25, 77, 0, -1 }, logTracer.RangesUsed);
+    }
+
+    [Fact]
+    public void ExploreAnotherSeeds()
+    {
+        var sut = CreateSeedLookup();
+        sut.seeds.Clear();
+        sut.seeds.Add(new SeedRange { Start = 81, Size = 1});
+
+        var result = sut.SearchSmallestLocation();
+
+        //Assert.Equal(46, result);
+        Assert.Equal(new[] { 50L, -1, -1, 25, 64, -1, 56 }, logTracer.RangesUsed);
+    }
+
+}
+
+
+class LogTracer : ITracer
+{
+    public List<long> RangesUsed { get; } = new List<long>();
+    public void LookupRangeUsed(long start)
+    {
+        RangesUsed.Add(start);
     }
 }

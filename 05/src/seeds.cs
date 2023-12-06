@@ -25,7 +25,7 @@ class Program
     {
         using var input = new StreamReader("input.txt");
 
-        var lookup = new SeedLookup(input);
+        var lookup = new SeedLookup(input, new NullTracer() );
 
 
         var min_location = lookup.SearchSmallestLocation();
@@ -39,6 +39,7 @@ class Program
 public class SeedLookup
 {
     public readonly List<SeedRange> seeds;
+    private readonly ITracer tracer;
     List<MapRange> seed_to_soil;
     List<MapRange> soil_to_fertilizer;
     List<MapRange> fertilizer_to_water;
@@ -47,7 +48,7 @@ public class SeedLookup
     List<MapRange> temperature_to_humidity;
     List<MapRange> humidity_to_location;
 
-    public SeedLookup(TextReader input)
+    public SeedLookup(TextReader input, ITracer tracer)
     {
         for (;;)
         {
@@ -81,6 +82,7 @@ public class SeedLookup
         if (light_to_temperature == null) light_to_temperature = new();
         if (temperature_to_humidity == null) temperature_to_humidity = new();
         if (humidity_to_location == null) humidity_to_location = new();
+        this.tracer = tracer;
     }
 
     public long SearchSmallestLocation()
@@ -141,7 +143,7 @@ public class SeedLookup
             });
         }
 
-        return FillGaps(range);
+        return range;
     }
 
     static List<MapRange> FillGaps(IEnumerable<MapRange> range)
@@ -171,16 +173,30 @@ public class SeedLookup
         return target;
     }
 
-    static long Lookup(long source, List<MapRange> range)
+    long Lookup(long source, List<MapRange> range)
     {
         foreach (var item in range)
         {
             if (source >= item.Src && source < item.Limit)
+            {
+                tracer.LookupRangeUsed(item.Src);
                 return source + item.Offset;
+            }
         }
 
+        tracer.LookupRangeUsed(-1);
         return source;
     }
+}
+
+public interface ITracer
+{
+    void LookupRangeUsed(long start);
+}
+
+internal class NullTracer : ITracer
+{
+    public void LookupRangeUsed(long start) {}
 }
 
 
