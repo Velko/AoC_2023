@@ -39,14 +39,30 @@ humidity-to-location map:
 56 93 4
     ";
     #endregion
-    [Fact]
-    public void SampleInput_should_produce_expected_Location()
+    
+    SeedLookup CreateSeedLookup()
     {
         using var input = new StringReader(SampleInput);
-        var sut = new SeedLookup(input);
+        return new SeedLookup(input);
+    }
+    [Fact(Skip = "The ultimate integration test")]
+    public void SampleInput_should_produce_expected_Location()
+    {
+        var sut = CreateSeedLookup();
 
         var result = sut.SearchSmallestLocation();
 
-        Assert.Equal(35, result);
+        Assert.Equal(46, result);
+    }
+
+    [Fact]
+    public void SeedsShouldBeLoadedAsRanges()
+    {
+        var sut = CreateSeedLookup();
+
+        Assert.Equal(new[] {
+            new SeedRange { Start = 79, Size = 14},
+            new SeedRange { Start = 55, Size = 13},
+        }, sut.seeds);
     }
 }

@@ -1,7 +1,7 @@
 using System.IO;
 using System.Collections.Generic;
 
-struct MapRange
+public struct MapRange
 {
     public long Dest;
     public long Src;
@@ -12,7 +12,7 @@ struct MapRange
 
 }
 
-struct SeedRange
+public struct SeedRange
 {
     public long Start;
     public long Size;
@@ -38,7 +38,7 @@ class Program
 
 public class SeedLookup
 {
-    List<SeedRange> seeds;
+    public readonly List<SeedRange> seeds;
     List<MapRange> seed_to_soil;
     List<MapRange> soil_to_fertilizer;
     List<MapRange> fertilizer_to_water;
@@ -111,11 +111,11 @@ public class SeedLookup
             .ToArray();
 
         List<SeedRange> seeds = new List<SeedRange>();
-        for (int i = 0; i < ranges.Length; i += 1)
+        for (int i = 0; i < ranges.Length; i += 2)
         {
             seeds.Add(new SeedRange {
                 Start = ranges[i],
-                Size = 1, //ranges[i + 1]
+                Size = ranges[i + 1]
             });
         }
 
