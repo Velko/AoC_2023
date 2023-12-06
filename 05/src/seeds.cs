@@ -86,11 +86,11 @@ class Program
             .Select(long.Parse)
             .ToArray();
 
-        for (int i = 0; i < ranges.Length; i += 1)
+        for (int i = 0; i < ranges.Length; i += 2)
         {
             seeds.Add(new SeedRange {
                 Start = ranges[i],
-                Size = 1,//ranges[i + 1]
+                Size = ranges[i + 1]
             });
         }
     }
