@@ -6,11 +6,17 @@ struct MapRange
     public long Dest;
     public long Src;
     public long Limit;
-};
+}
+
+struct SeedRange
+{
+    public long Start;
+    public long Limit;
+}
 
 class Program
 {
-    static List<long> seeds = new List<long>();
+    static List<SeedRange> seeds = new List<SeedRange>();
     static List<MapRange> seed_to_soil = new List<MapRange>();
     static List<MapRange> soil_to_fertilizer = new List<MapRange>();
     static List<MapRange> fertilizer_to_water = new List<MapRange>();
@@ -71,7 +77,12 @@ class Program
 
     static void ParseSeeds(string seed_str)
     {
-        seeds.AddRange(seed_str.Split(" ").Select(long.Parse));
+        var ranges = seed_str
+            .Split(" ")
+            .Select((x, i) => new { long.Parse(x), i })
+            .GroupBy(p => (p.i / 2), (p, i) => p.x.ToArray());
+
+        seeds.AddRange(s.Select(long.Parse));
     }
 
     static void ReadMap(StreamReader input, List<MapRange> range)
