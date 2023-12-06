@@ -90,38 +90,43 @@ public class SeedLookup
     {
         long min_location = long.MaxValue;
 
-        var total = seeds.Select(x => x.Size).Sum();
-        long progress = 0;
-        long old_prom = 0;
-
-        Console.WriteLine($"Total: {total}");
-
-        total /= 1000;
+        long prev_location = 0;
+        
 
         foreach (var seed_r in seeds)
         {
-            for(long seed = seed_r.Start; seed < seed_r.Limit; ++seed)
+            long prev_seed = seed_r.Start;
+            for(long coarse_seed = seed_r.Start; coarse_seed < seed_r.Limit; coarse_seed += 1000)
             {
-                ++progress;
-                var promil = progress / total;
-                if (promil != old_prom)
+                long location = ResolveSeed(coarse_seed);
+                if (location != prev_location + 1000)
                 {
-                    Console.WriteLine($"{promil / 10.0}%");
-                    old_prom = promil;
+                    for (long fine_seed = prev_seed; fine_seed < coarse_seed; ++fine_seed)
+                    {
+                        long fine_location = ResolveSeed(fine_seed);
+                        if (fine_location < min_location) min_location = fine_location;
+                    }
                 }
-                long soil = Lookup(seed, seed_to_soil);
-                long fertilizer = Lookup(soil, soil_to_fertilizer);
-                long water = Lookup(fertilizer, fertilizer_to_water);
-                long light = Lookup(water, water_to_light);
-                long temperature = Lookup(light, light_to_temperature);
-                long humidity = Lookup(temperature, temperature_to_humidity);
-                long location = Lookup(humidity, humidity_to_location);
 
                 if (location < min_location) min_location = location;
+                prev_seed = coarse_seed;
+                prev_location = location;
             }
         }
 
         return min_location;
+    }
+
+    long ResolveSeed(long seed)
+    {
+        long soil = Lookup(seed, seed_to_soil);
+        long fertilizer = Lookup(soil, soil_to_fertilizer);
+        long water = Lookup(fertilizer, fertilizer_to_water);
+        long light = Lookup(water, water_to_light);
+        long temperature = Lookup(light, light_to_temperature);
+        long humidity = Lookup(temperature, temperature_to_humidity);
+        long location = Lookup(humidity, humidity_to_location);
+        return location;
     }
 
     static List<SeedRange> ParseSeeds(string seed_str)
