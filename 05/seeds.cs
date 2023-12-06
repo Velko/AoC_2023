@@ -5,13 +5,17 @@ struct MapRange
 {
     public long Dest;
     public long Src;
-    public long Limit;
+    public long Size;
+    public long Limit => Src + Size;
+    public long DestLimit => Dest + Size;
+
 }
 
 struct SeedRange
 {
     public long Start;
-    public long Limit;
+    public long Size;
+    public long Limit => Start + Size;
 }
 
 class Program
@@ -57,7 +61,7 @@ class Program
 
         foreach (var seed in seeds)
         {
-            long soil = Lookup(seed, seed_to_soil);
+            long soil = Lookup(seed.Start, seed_to_soil);
             long fertilizer = Lookup(soil, soil_to_fertilizer);
             long water = Lookup(fertilizer, fertilizer_to_water);
             long light = Lookup(water, water_to_light);
@@ -79,10 +83,16 @@ class Program
     {
         var ranges = seed_str
             .Split(" ")
-            .Select((x, i) => new { long.Parse(x), i })
-            .GroupBy(p => (p.i / 2), (p, i) => p.x.ToArray());
+            .Select(long.Parse)
+            .ToArray();
 
-        seeds.AddRange(s.Select(long.Parse));
+        for (int i = 0; i < ranges.Length; i += 1)
+        {
+            seeds.Add(new SeedRange {
+                Start = ranges[i],
+                Size = 1,//ranges[i + 1]
+            });
+        }
     }
 
     static void ReadMap(StreamReader input, List<MapRange> range)
@@ -98,7 +108,7 @@ class Program
             {
                 Dest = values[0],
                 Src = values[1],
-                Limit = values[1] + values[2],
+                Size = values[2],
             });
         }
     }
