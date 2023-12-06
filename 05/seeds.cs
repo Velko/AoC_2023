@@ -1,23 +1,23 @@
 using System.IO;
 using System.Collections.Generic;
 
-struct map_range
+struct MapRange
 {
-    public long dest;
-    public long src;
-    public long limit;
+    public long Dest;
+    public long Src;
+    public long Limit;
 };
 
 class Program
 {
     static List<long> seeds = new List<long>();
-    static List<map_range> seed_to_soil = new List<map_range>();
-    static List<map_range> soil_to_fertilizer = new List<map_range>();
-    static List<map_range> fertilizer_to_water = new List<map_range>();
-    static List<map_range> water_to_light = new List<map_range>();
-    static List<map_range> light_to_temperature = new List<map_range>();
-    static List<map_range> temperature_to_humidity = new List<map_range>();
-    static List<map_range> humidity_to_location = new List<map_range>();
+    static List<MapRange> seed_to_soil = new List<MapRange>();
+    static List<MapRange> soil_to_fertilizer = new List<MapRange>();
+    static List<MapRange> fertilizer_to_water = new List<MapRange>();
+    static List<MapRange> water_to_light = new List<MapRange>();
+    static List<MapRange> light_to_temperature = new List<MapRange>();
+    static List<MapRange> temperature_to_humidity = new List<MapRange>();
+    static List<MapRange> humidity_to_location = new List<MapRange>();
 
     static int Main()
     {
@@ -29,21 +29,21 @@ class Program
             if (line == null) break;
 
             if (line.StartsWith("seeds: "))
-                parse_seeds(line.Substring(7));
+                ParseSeeds(line.Substring(7));
             else if (line.StartsWith("seed-to-soil map:"))
-                read_map(input, seed_to_soil);
+                ReadMap(input, seed_to_soil);
             else if (line.StartsWith("soil-to-fertilizer map:"))
-                read_map(input, soil_to_fertilizer);
+                ReadMap(input, soil_to_fertilizer);
             else if (line.StartsWith("fertilizer-to-water map:"))
-                read_map(input, fertilizer_to_water);
+                ReadMap(input, fertilizer_to_water);
             else if (line.StartsWith("water-to-light map:"))
-                read_map(input, water_to_light);
+                ReadMap(input, water_to_light);
             else if (line.StartsWith("light-to-temperature map:"))
-                read_map(input, light_to_temperature);
+                ReadMap(input, light_to_temperature);
             else if (line.StartsWith("temperature-to-humidity map:"))
-                read_map(input, temperature_to_humidity);
+                ReadMap(input, temperature_to_humidity);
             else if (line.StartsWith("humidity-to-location map:"))
-                read_map(input, humidity_to_location);
+                ReadMap(input, humidity_to_location);
         }
 
 
@@ -51,13 +51,13 @@ class Program
 
         foreach (var seed in seeds)
         {
-            long soil = lookup(seed, seed_to_soil);
-            long fertilizer = lookup(soil, soil_to_fertilizer);
-            long water = lookup(fertilizer, fertilizer_to_water);
-            long light = lookup(water, water_to_light);
-            long temperature = lookup(light, light_to_temperature);
-            long humidity = lookup(temperature, temperature_to_humidity);
-            long location = lookup(humidity, humidity_to_location);
+            long soil = Lookup(seed, seed_to_soil);
+            long fertilizer = Lookup(soil, soil_to_fertilizer);
+            long water = Lookup(fertilizer, fertilizer_to_water);
+            long light = Lookup(water, water_to_light);
+            long temperature = Lookup(light, light_to_temperature);
+            long humidity = Lookup(temperature, temperature_to_humidity);
+            long location = Lookup(humidity, humidity_to_location);
 
             if (location < min_location) min_location = location;
         }
@@ -69,12 +69,12 @@ class Program
         return 0;
     }
 
-    static void parse_seeds(string seed_str)
+    static void ParseSeeds(string seed_str)
     {
         seeds.AddRange(seed_str.Split(" ").Select(long.Parse));
     }
 
-    static void read_map(StreamReader input, List<map_range> range)
+    static void ReadMap(StreamReader input, List<MapRange> range)
     {
         int count = 0;
 
@@ -83,21 +83,21 @@ class Program
             if (string.IsNullOrEmpty(line)) break;
             var values = line.Split(" ").Select(long.Parse).ToList();
 
-            range.Add(new map_range
+            range.Add(new MapRange
             {
-                dest = values[0],
-                src = values[1],
-                limit = values[1] + values[2],
+                Dest = values[0],
+                Src = values[1],
+                Limit = values[1] + values[2],
             });
         }
     }
 
-    static long lookup(long source, List<map_range> range)
+    static long Lookup(long source, List<MapRange> range)
     {
         foreach (var item in range)
         {
-            if (source >= item.src && source < item.limit)
-                return item.dest + (source - item.src);
+            if (source >= item.Src && source < item.Limit)
+                return item.Dest + (source - item.Src);
         }
 
         return source;
