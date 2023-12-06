@@ -20,7 +20,7 @@ static int try_race(struct race *r);
 int main(void)
 {
     int result = 1;
-    for (int i = 0; i < 4; ++i)
+    for (int i = 0; i < 1; ++i)
     {
         result *= try_race(races + i);
     }
