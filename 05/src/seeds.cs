@@ -32,6 +32,7 @@ class Program
 
         // sample result: 35
         // real result: 261668924
+        // result p2: 24261545
         Console.WriteLine($"Result: {min_location}");
     }
 }
@@ -89,17 +90,35 @@ public class SeedLookup
     {
         long min_location = long.MaxValue;
 
-        foreach (var seed in seeds)
-        {
-            long soil = Lookup(seed.Start, seed_to_soil);
-            long fertilizer = Lookup(soil, soil_to_fertilizer);
-            long water = Lookup(fertilizer, fertilizer_to_water);
-            long light = Lookup(water, water_to_light);
-            long temperature = Lookup(light, light_to_temperature);
-            long humidity = Lookup(temperature, temperature_to_humidity);
-            long location = Lookup(humidity, humidity_to_location);
+        var total = seeds.Select(x => x.Size).Sum();
+        long progress = 0;
+        long old_prom = 0;
 
-            if (location < min_location) min_location = location;
+        Console.WriteLine($"Total: {total}");
+
+        total /= 1000;
+
+        foreach (var seed_r in seeds)
+        {
+            for(long seed = seed_r.Start; seed < seed_r.Limit; ++seed)
+            {
+                ++progress;
+                var promil = progress / total;
+                if (promil != old_prom)
+                {
+                    Console.WriteLine($"{promil / 10.0}%");
+                    old_prom = promil;
+                }
+                long soil = Lookup(seed, seed_to_soil);
+                long fertilizer = Lookup(soil, soil_to_fertilizer);
+                long water = Lookup(fertilizer, fertilizer_to_water);
+                long light = Lookup(water, water_to_light);
+                long temperature = Lookup(light, light_to_temperature);
+                long humidity = Lookup(temperature, temperature_to_humidity);
+                long location = Lookup(humidity, humidity_to_location);
+
+                if (location < min_location) min_location = location;
+            }
         }
 
         return min_location;
