@@ -8,6 +8,7 @@ struct MapRange
     public long Size;
     public long Limit => Src + Size;
     public long DestLimit => Dest + Size;
+    public long Offset => Dest - Src;
 
 }
 
@@ -86,11 +87,11 @@ class Program
             .Select(long.Parse)
             .ToArray();
 
-        for (int i = 0; i < ranges.Length; i += 2)
+        for (int i = 0; i < ranges.Length; i += 1)
         {
             seeds.Add(new SeedRange {
                 Start = ranges[i],
-                Size = ranges[i + 1]
+                Size = 1, //ranges[i + 1]
             });
         }
     }
@@ -118,12 +119,11 @@ class Program
         foreach (var item in range)
         {
             if (source >= item.Src && source < item.Limit)
-                return item.Dest + (source - item.Src);
+                return source + item.Offset;
         }
 
         return source;
     }
-
 }
 
 
