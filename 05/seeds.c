@@ -38,14 +38,14 @@ int main(void)
     char line[BUFFER_SIZE];
     FILE *input = fopen("input.txt", "r");
 
-    int num_seeds = 0;
+    int num_seed_ranges = 0;
 
     for (;;)
     {
         if (fgets(line, BUFFER_SIZE, input) == NULL) break;
 
         if (strstr(line, "seeds: ") == line)
-            num_seeds = parse_seeds(line + 7);
+            num_seed_ranges = parse_seeds(line + 7);
         else if (strstr(line, "seed-to-soil map:") == line)
             read_map(input, seed_to_soil);
         else if (strstr(line, "soil-to-fertilizer map:") == line)
@@ -64,19 +64,42 @@ int main(void)
 
     fclose(input);
 
+    long total = 0;
+    for (int sr = 0; sr < num_seed_ranges; ++sr)
+    {
+        total += seeds[sr].limit - seeds[sr].start;
+    }
+
+    printf("Total: %ld\n", total);
+
     long min_location = __LONG_MAX__;
 
-    for (int s = 0; s < num_seeds; ++s)
-    {
-        long soil = lookup(seeds[s].start, seed_to_soil);
-        long fertilizer = lookup(soil, soil_to_fertilizer);
-        long water = lookup(fertilizer, fertilizer_to_water);
-        long light = lookup(water, water_to_light);
-        long temperature = lookup(light, light_to_temperature);
-        long humidity = lookup(temperature, temperature_to_humidity);
-        long location = lookup(humidity, humidity_to_location);
+    total /= 1000;
+    long progress = 0;
+    long old_prom = 0;
 
-        if (location < min_location) min_location = location;
+    for (int sr = 0; sr < num_seed_ranges; ++sr)
+    {
+        for (long seed = seeds[sr].start; seed < seeds[sr].limit; ++seed)
+        {
+            ++progress;
+            long promil = progress / total;
+                if (promil != old_prom)
+                {
+                    printf("%g%%\n", promil / 10.0);
+                    old_prom = promil;
+                }
+
+            long soil = lookup(seed, seed_to_soil);
+            long fertilizer = lookup(soil, soil_to_fertilizer);
+            long water = lookup(fertilizer, fertilizer_to_water);
+            long light = lookup(water, water_to_light);
+            long temperature = lookup(light, light_to_temperature);
+            long humidity = lookup(temperature, temperature_to_humidity);
+            long location = lookup(humidity, humidity_to_location);
+
+            if (location < min_location) min_location = location;
+        }
     }
 
     printf("Result: %ld\n", min_location);
@@ -93,9 +116,8 @@ static int parse_seeds(char *seed_str)
     while (seed_token)
     {
         seeds[count].start = atol(seed_token);
-        seeds[count].limit = 1;
-        //seed_token = strtok_r(NULL, " ", &savep);
-        //seeds[count].limit = seeds[count].start + atol(seed_token);
+        seed_token = strtok_r(NULL, " ", &savep);
+        seeds[count].limit = seeds[count].start + atol(seed_token);
 
         seed_token = strtok_r(NULL, " ", &savep);
         ++count;
