@@ -1,57 +1,69 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 
-#define BUFFER_SIZE     256
-#define MAX_RANGES      200  /* there are ~220 lines total in input, should be enough */
-#define MAX_SEEDS       100
+/* Compile with -O3 for max performance. e.g
+    clang -O3 seeds.c -o seeds
+
+   Measure execution speed (on GNU/Linux):
+    time ./seeds
+ */
+
+#define LINE_SIZE     256
+#define MAX_MAPS       50  /* input contains about ~220 lines total. 50 per table should be is more than enough  */
+#define MAX_SEEDS      50
+
+// progress indicator is interesting but slows things down
+//#define DISPLAY_PROGRESS
 
 struct map_range
 {
-    long offset;
+    long offset; //     precalculated as dest - src, optimization for source -> destination transformation
     long src;
-    long limit;
+    long limit;  //     precalculated as src + length, optimization for lookups
 };
 
 struct seed_range
 {
     long start;
-    long limit;
+    long limit;  //     also precalculated as start + count, mostly for convenience, no real performance benefits
 };
 
 struct seed_range seeds[MAX_SEEDS];
-struct map_range seed_to_soil[MAX_RANGES];
-struct map_range soil_to_fertilizer[MAX_RANGES];
-struct map_range fertilizer_to_water[MAX_RANGES];
-struct map_range water_to_light[MAX_RANGES];
-struct map_range light_to_temperature[MAX_RANGES];
-struct map_range temperature_to_humidity[MAX_RANGES];
-struct map_range humidity_to_location[MAX_RANGES];
 
+/* maps are "null-terminated": an item with *limit* == 0 marks the end */
+struct map_range seed_to_soil[MAX_MAPS];
+struct map_range soil_to_fertilizer[MAX_MAPS];
+struct map_range fertilizer_to_water[MAX_MAPS];
+struct map_range water_to_light[MAX_MAPS];
+struct map_range light_to_temperature[MAX_MAPS];
+struct map_range temperature_to_humidity[MAX_MAPS];
+struct map_range humidity_to_location[MAX_MAPS];
 
-struct map_range seed_to_soil_cached;
-struct map_range soil_to_fertilizer_cached;
-struct map_range fertilizer_to_water_cached;
-struct map_range water_to_light_cached;
-struct map_range light_to_temperature_cached;
-struct map_range temperature_to_humidity_cached;
-struct map_range humidity_to_location_cached;
+/* "secret sauce" for fast sequential lookups - cache recently used range */
+struct map_range seed_to_soil_cache;
+struct map_range soil_to_fertilizer_cache;
+struct map_range fertilizer_to_water_cache;
+struct map_range water_to_light_cache;
+struct map_range light_to_temperature_cache;
+struct map_range temperature_to_humidity_cache;
+struct map_range humidity_to_location_cache;
+
 
 static int parse_seeds(char *seeds);
-static void read_map(FILE *input, struct map_range *range);
-static long lookup(long source, struct map_range *range, struct map_range *cached);
+static void read_map(FILE *input, struct map_range *mappings);
+static long lookup(long source, struct map_range *mappings, struct map_range *cache);
 
 int main(void)
 {
-    char line[BUFFER_SIZE];
+    char line[LINE_SIZE];
     FILE *input = fopen("input.txt", "r");
 
+    /* parse input file */
     int num_seed_ranges = 0;
-
     for (;;)
     {
-        if (fgets(line, BUFFER_SIZE, input) == NULL) break;
+        if (fgets(line, LINE_SIZE, input) == NULL) break;
 
         if (strstr(line, "seeds: ") == line)
             num_seed_ranges = parse_seeds(line + 7);
@@ -70,57 +82,53 @@ int main(void)
         else if (strstr(line, "humidity-to-location map:") == line)
             read_map(input, humidity_to_location);
     }
-
     fclose(input);
 
+    /* set caches to guaranteed miss during first lookup */
+    seed_to_soil_cache.limit = 0;
+    soil_to_fertilizer_cache.limit = 0;
+    fertilizer_to_water_cache.limit = 0;
+    water_to_light_cache.limit = 0;
+    light_to_temperature_cache.limit = 0;
+    temperature_to_humidity_cache.limit = 0;
+    humidity_to_location_cache.limit = 0;
+
+    #ifdef DISPLAY_PROGRESS
     long total = 0;
     for (int sr = 0; sr < num_seed_ranges; ++sr)
     {
         total += seeds[sr].limit - seeds[sr].start;
     }
-
-    seed_to_soil_cached.limit = 0;
-    soil_to_fertilizer_cached.limit = 0;
-    fertilizer_to_water_cached.limit = 0;
-    water_to_light_cached.limit = 0;
-    light_to_temperature_cached.limit = 0;
-    temperature_to_humidity_cached.limit = 0;
-    humidity_to_location_cached.limit = 0;
-
-    printf("Total: %ld\n", total);
-
-    long min_location = __LONG_MAX__;
-
     total /= 100;
     long progress = 0;
     long old_percent = 0;
+    #endif
 
+    long min_location = __LONG_MAX__;
     for (int sr = 0; sr < num_seed_ranges; ++sr)
     {
         for (long seed = seeds[sr].start; seed < seeds[sr].limit; ++seed)
         {
-            ++progress;
-            long percent = progress / total;
+            #ifdef DISPLAY_PROGRESS
+            long percent = ++progress / total;
             if (percent != old_percent)
             {
-                printf("%d%%\n", percent);
+                printf("%ld%%\n", percent);
                 old_percent = percent;
             }
+            #endif
 
-            long soil = lookup(seed, seed_to_soil, &seed_to_soil_cached);
-            long fertilizer = lookup(soil, soil_to_fertilizer, &soil_to_fertilizer_cached);
-            long water = lookup(fertilizer, fertilizer_to_water, &fertilizer_to_water_cached);
-            long light = lookup(water, water_to_light, &water_to_light_cached);
-            long temperature = lookup(light, light_to_temperature, &light_to_temperature_cached);
-            long humidity = lookup(temperature, temperature_to_humidity, &temperature_to_humidity_cached);
-            long location = lookup(humidity, humidity_to_location, &humidity_to_location_cached);
+            long soil = lookup(seed, seed_to_soil, &seed_to_soil_cache);
+            long fertilizer = lookup(soil, soil_to_fertilizer, &soil_to_fertilizer_cache);
+            long water = lookup(fertilizer, fertilizer_to_water, &fertilizer_to_water_cache);
+            long light = lookup(water, water_to_light, &water_to_light_cache);
+            long temperature = lookup(light, light_to_temperature, &light_to_temperature_cache);
+            long humidity = lookup(temperature, temperature_to_humidity, &temperature_to_humidity_cache);
+            long location = lookup(humidity, humidity_to_location, &humidity_to_location_cache);
 
             if (location < min_location) min_location = location;
         }
     }
-
-    // result p1: 261668924
-    // result p2: 24261545
 
     printf("Result: %ld\n", min_location);
 
@@ -130,71 +138,69 @@ int main(void)
 static int parse_seeds(char *seed_str)
 {
     char *savep;
-    char *seed_token = strtok_r(seed_str, " ", &savep);
+    char *token = strtok_r(seed_str, " ", &savep);
 
-    int count = 0;
-    while (seed_token)
+    int count;
+    for (count = 0; token != NULL; ++count)
     {
-        seeds[count].start = atol(seed_token);
-        seed_token = strtok_r(NULL, " ", &savep);
-        seeds[count].limit = seeds[count].start + atol(seed_token);
+        seeds[count].start = atol(token);
+        token = strtok_r(NULL, " ", &savep);
+        seeds[count].limit = seeds[count].start + atol(token);
 
-        seed_token = strtok_r(NULL, " ", &savep);
-        ++count;
+        token = strtok_r(NULL, " ", &savep);
     }
-
-    printf("S: %d\n", count);
 
     return count;
 }
 
-static void read_map(FILE *input, struct map_range *range)
+static void read_map(FILE *input, struct map_range *mappings)
 {
-    int count = 0;
-    long length;
-    long dest;
-
-    for (;;++count) {
-        int nread = fscanf(input, "%ld %ld %ld", &dest, &range[count].src, &length);
+    int count;
+    for (count = 0;;++count) {
+        long length;
+        long dest;
+        int nread = fscanf(input, "%ld %ld %ld", &dest, &mappings[count].src, &length);
         if (nread != 3) break;
-        range[count].limit = range[count].src + length;
-        range[count].offset = dest - range[count].src;
 
-        //printf("[%ld:%ld) -> %ld\n", range[count].src, range[count].limit, range[count].dest);
+        /* pre-calculate for more optimal lookups */
+        mappings[count].limit = mappings[count].src + length;
+        mappings[count].offset = dest - mappings[count].src;
     }
-    range[count].limit = 0;
+    mappings[count].limit = 0; /* NULL-terminate */
 }
 
-static long lookup(long source, struct map_range *range, struct map_range *cached)
+static long lookup(long source, struct map_range *mappings, struct map_range *cache)
 {
     // try cached first
-    if (source >= cached->src && source < cached->limit)
-        return source + cached->offset;
+    if (source >= cache->src && source < cache->limit)
+        return source + cache->offset;
 
-    // find new range
-    for (int i = 0; range[i].limit != 0; ++i)
+    // cache miss, find new mapping
+    for (int i = 0; mappings[i].limit != 0; ++i)
     {
-        if (source >= range[i].src && source < range[i].limit)
+        if (source >= mappings[i].src && source < mappings[i].limit)
         {
-            memcpy(cached, range + i, sizeof(struct map_range));
-            return source + range[i].offset;
+            /* found: copy to cache, calculate result */
+            memcpy(cache, mappings + i, sizeof(struct map_range));
+            return source + mappings[i].offset;
         }
     }
 
-    // not found, prepare new pseudo-cache - gap where *source* belongs:
-    //     find largest limit which is smaller (or equal) than *source* - use as src
-    //     find smallest src, that is larger than *source* - use as limit
-    //     the offset remains 0
-    cached->offset = 0;
-    cached->src = 0;
-    cached->limit = __LONG_MAX__;
+    // not found, set cache to a pseudo-mapping item to cover gap where current
+    // *source* belongs:
+    //  - find largest limit which is smaller (or equal) than *source* - use as src
+    //  - find smallest src, that is larger than *source* - use as limit
+    //  - the offset should be 0
+    cache->offset = 0;
+    cache->src = 0;
+    cache->limit = __LONG_MAX__;
 
-    for (int i = 0; range[i].limit; ++i)
+    for (int i = 0; mappings[i].limit; ++i)
     {
-        if (range[i].limit <= source && cached->src < range[i].limit)
-            cached->src = range[i].limit;
-        if (range[i].src > source && cached->limit > range[i].src)
-            cached->limit = range[i].src;
+        if (mappings[i].limit <= source && cache->src < mappings[i].limit)
+            cache->src = mappings[i].limit;
+        if (mappings[i].src > source && cache->limit > mappings[i].src)
+            cache->limit = mappings[i].src;
     }
 
     return source;
