@@ -35,7 +35,8 @@ struct camel_hand
 struct camel_hand hands[MAX_HANDS];
 
 static void parse_line(const char *line, struct camel_hand *hand);
-static void calculate_value(struct camel_hand *hand);
+static int calculate_ctype(const char *cards);
+static void calculate_values(struct camel_hand *hand);
 static int compare_hands(const void *a, const void *b);
 
 int main(void)
@@ -48,7 +49,8 @@ int main(void)
     {
         if (fgets(line, BUFFER_SIZE, input) == NULL) break;
         parse_line(line, hands + n_hands);
-        calculate_value(hands + n_hands);
+        calculate_values(hands + n_hands);
+        hands[n_hands].ctype = calculate_ctype(hands[n_hands].cards);
         ++n_hands;
     }
 
@@ -75,9 +77,23 @@ static void parse_line(const char *line, struct camel_hand *hand)
     sscanf(line, "%s %d", hand->cards, &hand->bid);
 }
 
+static void calculate_values(struct camel_hand *hand)
+{
+    for (int r = 0; r < 13; ++r)
+    {
+        for (int i = 0; i < 5; ++i)
+        {
+            if (labels[r] == hand->cards[i])
+            {
+                hand->values[i] = r + 1;
+            }
+        }
+    }
+}
+
 static int compare_counts_count(const void *a, const void *b);
 
-static void calculate_value(struct camel_hand *hand)
+static int calculate_ctype(const char *cards)
 {
     struct card_count counts[NCARDS];
     memset(counts, 0, sizeof(counts));
@@ -87,10 +103,9 @@ static void calculate_value(struct camel_hand *hand)
         counts[r].card = r;
         for (int i = 0; i < 5; ++i)
         {
-            if (labels[r] == hand->cards[i])
+            if (labels[r] == cards[i])
             {
                 ++counts[r].count;
-                hand->values[i] = r + 2;
             }
         }
     }
@@ -98,24 +113,19 @@ static void calculate_value(struct camel_hand *hand)
     qsort(counts, NCARDS, sizeof(struct card_count), compare_counts_count);
 
     if (counts[0].count == 5)
-        hand->ctype = FIVE;
+        return FIVE;
     else if (counts[0].count == 4)
-        hand->ctype = FOUR;
+        return FOUR;
     else if (counts[0].count == 3 && counts[1].count == 2)
-        hand->ctype = FULL;
+        return FULL;
     else if (counts[0].count == 3)
-        hand->ctype = THREE;
+        return THREE;
     else if (counts[0].count == 2 && counts[1].count == 2)
-        hand->ctype = TWOPAIR;
+        return TWOPAIR;
     else if (counts[0].count == 2)
-        hand->ctype = PAIR;
+        return PAIR;
     else
-        hand->ctype = HIGH;
-
-    // for (int r = 0; r < 5; ++r)
-    // {
-    //     printf("%c %d %d\n", labels[counts[r].card], hand->values[r], counts[r].count);
-    // }
+        return HIGH;
 }
 
 static int compare_counts_count(const void *a, const void *b)
