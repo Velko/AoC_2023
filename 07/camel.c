@@ -14,7 +14,7 @@
 #define PAIR        1
 #define HIGH        0
 
-const char *labels = "23456789TJQKA";
+const char *labels = "J23456789TQKA";
 
 
 struct card_count
@@ -36,6 +36,7 @@ struct camel_hand hands[MAX_HANDS];
 
 static void parse_line(const char *line, struct camel_hand *hand);
 static int calculate_ctype(const char *cards);
+static int calculate_ctype_with_jokers(const char *cards);
 static void calculate_values(struct camel_hand *hand);
 static int compare_hands(const void *a, const void *b);
 
@@ -50,7 +51,7 @@ int main(void)
         if (fgets(line, BUFFER_SIZE, input) == NULL) break;
         parse_line(line, hands + n_hands);
         calculate_values(hands + n_hands);
-        hands[n_hands].ctype = calculate_ctype(hands[n_hands].cards);
+        hands[n_hands].ctype = calculate_ctype_with_jokers(hands[n_hands].cards);
         ++n_hands;
     }
 
@@ -89,6 +90,41 @@ static void calculate_values(struct camel_hand *hand)
             }
         }
     }
+}
+
+static int calculate_ctype_with_jokers(const char *cards)
+{
+    int njokers = 0;
+    for (int i = 0; i < 5; ++i)
+    {
+        if (cards[i] == 'J') ++njokers;
+    }
+
+    /* no jokers or all jokers -> work as usual */
+    if (njokers == 0 || njokers == 5)
+        return calculate_ctype(cards);
+
+    int ctype = HIGH;
+    for (int n = 0; n < 5; ++n)
+    {
+        if (cards[n] != 'J')
+        {
+            char replacement = cards[n];
+            char replaced[6];
+            strcpy(replaced, cards);
+
+            for (int j = 0; j < 5; ++j)
+            {
+                if (replaced[j] == 'J')
+                    replaced[j] = replacement;
+            }
+
+            int new_ctype = calculate_ctype(replaced);
+            if (new_ctype > ctype) ctype = new_ctype;
+        }
+    }
+
+    return ctype;
 }
 
 static int compare_counts_count(const void *a, const void *b);
