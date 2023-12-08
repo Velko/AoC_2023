@@ -6,6 +6,8 @@
 #define INSTRUCTION_LEN_MAX     300
 #define STEP_MAP_RANGE          (32 * 32 * 32)
 
+#define NPATHS_MAX              10
+
 struct step
 {
     int left;
@@ -15,6 +17,8 @@ struct step
 char instructions[INSTRUCTION_LEN_MAX];
 
 struct step step_map[STEP_MAP_RANGE];
+
+int locations[NPATHS_MAX];
 
 static void read_map(FILE *input);
 static struct step* lookup_item(int key);
@@ -31,40 +35,52 @@ int main(void)
 
     read_map(input);
 
+    fclose(input);
 
-    int destination = encode_location("ZZZ");
-    int location = encode_location("AAA");
+    int npaths = 0;
+    for (int i = 0 ; i < STEP_MAP_RANGE; i+=32)
+    {
+        if (step_map[i].left != -1)
+        {
+            locations[npaths++] = i;
+            printf("%d\n", npaths);
+        }
+    }
 
+    //int destination = encode_location("ZZZ");
+    //int location = encode_location("AAA");
 
-    int nsteps = 0;
+    long nsteps = 0;
     bool not_done = true;
     while (not_done) {
         for (int s = 0; s < instr_len && not_done; ++s)
         {
-            struct step *step = lookup_item(location);
-
-            switch (instructions[s])
+            not_done = false;
+            for (int p = 0; p < npaths; ++p)
             {
-                case 'L':
-                    location = step->left;
-                    break;
-                case 'R':
-                    location = step->right;
-                    break;
-                default:
-                    printf("WTF?\n");
-                    return 1;
-            }
+                struct step *step = lookup_item(locations[p]);
 
-            not_done = location != destination;
+                switch (instructions[s])
+                {
+                    case 'L':
+                        locations[p] = step->left;
+                        break;
+                    case 'R':
+                        locations[p] = step->right;
+                        break;
+                    default:
+                        printf("WTF?\n");
+                        return 1;
+                }
+                not_done |= (locations[p] & 31) != ('Z' - 'A');
+            }
             ++nsteps;
         }
     }
 
     // part1:  18157
-    printf("Result: %d\n", nsteps);
+    printf("Result: %ld\n", nsteps);
 
-    fclose(input);
     return 0;
 }
 
@@ -79,6 +95,10 @@ static void read_map(FILE *input)
         if (r != 3) break;
 
         int idx = encode_location(dest);
+        if (idx >= STEP_MAP_RANGE)
+        {
+            printf("Range wtf %d\n", idx);
+        }
         step_map[idx].left = encode_location(left + 1);
         step_map[idx].right = encode_location(right);
     }
@@ -86,7 +106,7 @@ static void read_map(FILE *input)
 
 static int encode_location(const char* location)
 {
-    return ((location[0] - 'A' << 10)) | ((location[1] - 'A' << 5)) | ((location[2] - 'A'));
+    return ((location[0] - 'A') << 10) | ((location[1] - 'A') << 5) | (location[2] - 'A');
 }
 
 static struct step* lookup_item(int key)
