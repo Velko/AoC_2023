@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdbool.h>
 #include <string.h>
 
 
@@ -35,22 +36,28 @@ int main(void)
     int location = encode_location("AAA");
 
 
-    int nsteps;
-    for (nsteps = 0; location != destination; ++nsteps)
-    {
-        struct step *step = lookup_item(location);
-
-        switch (instructions[nsteps % instr_len])
+    int nsteps = 0;
+    bool not_done = true;
+    while (not_done) {
+        for (int s = 0; s < instr_len && not_done; ++s)
         {
-            case 'L':
-                location = step->left;
-                break;
-            case 'R':
-                location = step->right;
-                break;
-            default:
-                printf("WTF?\n");
-                return 1;
+            struct step *step = lookup_item(location);
+
+            switch (instructions[s])
+            {
+                case 'L':
+                    location = step->left;
+                    break;
+                case 'R':
+                    location = step->right;
+                    break;
+                default:
+                    printf("WTF?\n");
+                    return 1;
+            }
+
+            not_done = location != destination;
+            ++nsteps;
         }
     }
 
