@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
 
 
@@ -15,16 +15,14 @@ struct step
 };
 
 char instructions[INSTRUCTION_LEN_MAX];
-
 struct step step_map[STEP_MAP_RANGE];
 
-int locations[NPATHS_MAX];
-
 static void read_map(FILE *input);
-static struct step* lookup_item(int key);
 static int encode_location(const char* location);
 static long solve_location(int instr_len, int start);
 static void print_location(int location);
+static long lcm(long a, long b);
+static long gcd(long a, long b);
 
 int main(void)
 {
@@ -39,28 +37,23 @@ int main(void)
 
     fclose(input);
 
-    int npaths = 0;
+    long total_steps = 1;
+
     for (int i = 0 ; i < STEP_MAP_RANGE; i+=32)
     {
         if (step_map[i].left != -1)
         {
-            locations[npaths++] = i;
+            long num_steps = solve_location(instr_len, i);
+            total_steps = lcm(total_steps, num_steps);
         }
     }
 
-    for (int i = 0; i < npaths; ++i)
-    {
-        long num = solve_location(instr_len, locations[i]);
-        printf("%ld\n", num);
-    }
-
-
-    // part1:  18157
-    //printf("Result: %d\n", nsteps);
+    // part1: 18157
+    // part2: 14299763833181
+    printf("Result: %ld\n", total_steps);
 
     return 0;
 }
-
 
 static long solve_location(int instr_len, int start)
 {
@@ -69,19 +62,17 @@ static long solve_location(int instr_len, int start)
     for (;;) {
         for (int s = 0; s < instr_len; ++s)
         {
-            struct step *step = lookup_item(location);
-
             switch (instructions[s])
             {
                 case 'L':
-                    location = step->left;
+                    location = step_map[location].left;
                     break;
                 case 'R':
-                    location = step->right;
+                    location = step_map[location].right;
                     break;
                 default:
                     printf("WTF?\n");
-                    return 1;
+                    exit(1);
             }
 
             ++nsteps;
@@ -90,8 +81,6 @@ static long solve_location(int instr_len, int start)
         }
     }
 }
-
-
 
 static void read_map(FILE *input)
 {
@@ -118,9 +107,23 @@ static void print_location(int location)
     printf("%c%c%c\n", (location >> 10) + 'A', ((location >> 5) & 31) + 'A', (location &31) + 'A');
 }
 
-static struct step* lookup_item(int key)
+
+static long lcm(long a, long b)
 {
-    if (step_map[key].left != -1)
-        return step_map + key;
-    return NULL;
+    return (a / gcd(a, b)) * b;
+}
+
+static long gcd(long a, long b)
+{
+    while (a > 0 && b > 0)
+    {
+        if (a > b)
+            a = a % b;
+        else
+            b = b % a;
+    }
+
+    if (a == 0)
+        return b;
+    return a;
 }
