@@ -4,7 +4,22 @@
 
 
 #define INSTRUCTION_LEN_MAX     300
-#define STEP_MAP_RANGE          (32 * 32 * 32)
+
+/* For top performance, locations are re-packed into integers as tight as possible:
+   There are 26 letters in alphabet, they can be packed into 5-bits, 32 distinct values.
+   All values from 'AAA' to 'ZZZ' then ranges (with some gaps) from 0 to 26624 a reasonable
+   value for array index. Accessing item in array by index is much faster than looking it up
+   in dictionary or list.
+
+   In the end this performance optimization does not matter much now, but my first attempt
+   was to brute-force the problem, and I kinda like the efficiency.
+*/
+
+#define CHAR_BITS               5
+#define CHAR_NUM                (1 << 5)
+#define CHAR_MASK               (CHAR_NUM - 1)
+#define STEP_MAP_RANGE          (CHAR_NUM * CHAR_NUM * CHAR_NUM)
+#define CHAR_IDX(C)             ((C) - 'A')
 
 #define NPATHS_MAX              10
 
@@ -20,7 +35,7 @@ struct step step_map[STEP_MAP_RANGE];
 static void read_map(FILE *input);
 static int encode_location(const char* location);
 static long solve_location(int instr_len, int start);
-static void print_location(int location);
+//static void print_location(int location);
 static long lcm(long a, long b);
 static long gcd(long a, long b);
 
@@ -39,7 +54,7 @@ int main(void)
 
     long total_steps = 1;
 
-    for (int i = 0 ; i < STEP_MAP_RANGE; i+=32)
+    for (int i = 0 ; i < STEP_MAP_RANGE; i+=CHAR_NUM)
     {
         if (step_map[i].left != -1)
         {
@@ -76,7 +91,7 @@ static long solve_location(int instr_len, int start)
             }
 
             ++nsteps;
-            if ((location & 31) == ('Z' - 'A'))
+            if ((location & CHAR_MASK) == CHAR_IDX('Z'))
                 return nsteps;
         }
     }
@@ -99,14 +114,18 @@ static void read_map(FILE *input)
 
 static int encode_location(const char* location)
 {
-    return ((location[0] - 'A') << 10) | ((location[1] - 'A') << 5) | (location[2] - 'A');
+    return (CHAR_IDX(location[0]) << CHAR_BITS * 2)
+         | (CHAR_IDX(location[1]) << CHAR_BITS * 1)
+         | (CHAR_IDX(location[2]) << CHAR_BITS * 0);
 }
 
-static void print_location(int location)
-{
-    printf("%c%c%c\n", (location >> 10) + 'A', ((location >> 5) & 31) + 'A', (location &31) + 'A');
-}
-
+// static void print_location(int location)
+// {
+//     printf("%c%c%c\n", 
+//         ((location >> CHAR_BITS * 2) & CHAR_MASK) + 'A',
+//         ((location >> CHAR_BITS * 1) & CHAR_MASK) + 'A',
+//         ((location >> CHAR_BITS * 0) & CHAR_MASK) + 'A');
+// }
 
 static long lcm(long a, long b)
 {
