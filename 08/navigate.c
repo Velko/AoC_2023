@@ -3,21 +3,21 @@
 
 
 #define INSTRUCTION_LEN_MAX     300
-#define STEP_MAP_MAX           1000
+#define STEP_MAP_RANGE          (32 * 32 * 32)
 
 struct step
 {
-    char dest[4];
-    char left[4];
-    char right[4];
+    int left;
+    int right;
 };
 
 char instructions[INSTRUCTION_LEN_MAX];
 
-struct step step_map[STEP_MAP_MAX];
+struct step step_map[STEP_MAP_RANGE];
 
 static void read_map(FILE *input);
-static struct step* lookup_item(const char *key);
+static struct step* lookup_item(int key);
+static int encode_location(const char* location);
 
 int main(void)
 {
@@ -30,9 +30,13 @@ int main(void)
 
     read_map(input);
 
-    const char *location = "AAA";
+
+    int destination = encode_location("ZZZ");
+    int location = encode_location("AAA");
+
+
     int nsteps;
-    for (nsteps = 0; strcmp(location, "ZZZ") != 0; ++nsteps)
+    for (nsteps = 0; location != destination; ++nsteps)
     {
         struct step *step = lookup_item(location);
 
@@ -40,11 +44,9 @@ int main(void)
         {
             case 'L':
                 location = step->left;
-                //printf("L");
                 break;
             case 'R':
                 location = step->right;
-                //printf("R");
                 break;
             default:
                 printf("WTF?\n");
@@ -52,6 +54,7 @@ int main(void)
         }
     }
 
+    // part1:  18157
     printf("Result: %d\n", nsteps);
 
     fclose(input);
@@ -61,26 +64,27 @@ int main(void)
 
 static void read_map(FILE *input)
 {
-    int len = 0;
-    char left[8], right[8];
-    for (;;++len)
+    memset(step_map, -1, sizeof(step_map));
+    char dest[8], left[8], right[8];
+    for (;;)
     {
-        int r = fscanf(input, "%s = %s %s\n", step_map[len].dest, left, right);
+        int r = fscanf(input, "%s = %s %s\n", dest, left, right);
         if (r != 3) break;
-        strncpy(step_map[len].left, left + 1, 3); step_map[len].left[3] = 0;
-        strncpy(step_map[len].right, right, 3); step_map[len].right[3] = 0;
-        //printf("'%s' -> '%s' '%s'\n", step_map[len].dest, step_map[len].left, step_map[len].right);
+
+        int idx = encode_location(dest);
+        step_map[idx].left = encode_location(left + 1);
+        step_map[idx].right = encode_location(right);
     }
-    step_map[len].dest[0] = 0;
 }
 
-static struct step* lookup_item(const char *key)
+static int encode_location(const char* location)
 {
-    for (int i = 0; step_map[i].dest[0]; ++i)
-    {
-        if (strcmp(step_map[i].dest, key) == 0)
-            return step_map + i;
-    }
+    return ((location[0] - 'A' << 10)) | ((location[1] - 'A' << 5)) | ((location[2] - 'A'));
+}
 
+static struct step* lookup_item(int key)
+{
+    if (step_map[key].left != -1)
+        return step_map + key;
     return NULL;
 }
