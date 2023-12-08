@@ -24,6 +24,7 @@ static void read_map(FILE *input);
 static struct step* lookup_item(int key);
 static int encode_location(const char* location);
 static long solve_location(int instr_len, int start);
+static void print_location(int location);
 
 int main(void)
 {
@@ -110,6 +111,11 @@ static void read_map(FILE *input)
 static int encode_location(const char* location)
 {
     return ((location[0] - 'A') << 10) | ((location[1] - 'A') << 5) | (location[2] - 'A');
+}
+
+static void print_location(int location)
+{
+    printf("%c%c%c\n", (location >> 10) + 'A', ((location >> 5) & 31) + 'A', (location &31) + 'A');
 }
 
 static struct step* lookup_item(int key)
