@@ -23,6 +23,7 @@ int locations[NPATHS_MAX];
 static void read_map(FILE *input);
 static struct step* lookup_item(int key);
 static int encode_location(const char* location);
+static long solve_location(int instr_len, int start);
 
 int main(void)
 {
@@ -43,46 +44,52 @@ int main(void)
         if (step_map[i].left != -1)
         {
             locations[npaths++] = i;
-            printf("%d\n", npaths);
         }
     }
 
-    //int destination = encode_location("ZZZ");
-    //int location = encode_location("AAA");
-
-    long nsteps = 0;
-    bool not_done = true;
-    while (not_done) {
-        for (int s = 0; s < instr_len && not_done; ++s)
-        {
-            not_done = false;
-            for (int p = 0; p < npaths; ++p)
-            {
-                struct step *step = lookup_item(locations[p]);
-
-                switch (instructions[s])
-                {
-                    case 'L':
-                        locations[p] = step->left;
-                        break;
-                    case 'R':
-                        locations[p] = step->right;
-                        break;
-                    default:
-                        printf("WTF?\n");
-                        return 1;
-                }
-                not_done |= (locations[p] & 31) != ('Z' - 'A');
-            }
-            ++nsteps;
-        }
+    for (int i = 0; i < npaths; ++i)
+    {
+        long num = solve_location(instr_len, locations[i]);
+        printf("%ld\n", num);
     }
+
 
     // part1:  18157
-    printf("Result: %ld\n", nsteps);
+    //printf("Result: %d\n", nsteps);
 
     return 0;
 }
+
+
+static long solve_location(int instr_len, int start)
+{
+    long nsteps = 0;
+    int location = start;
+    for (;;) {
+        for (int s = 0; s < instr_len; ++s)
+        {
+            struct step *step = lookup_item(location);
+
+            switch (instructions[s])
+            {
+                case 'L':
+                    location = step->left;
+                    break;
+                case 'R':
+                    location = step->right;
+                    break;
+                default:
+                    printf("WTF?\n");
+                    return 1;
+            }
+
+            ++nsteps;
+            if ((location & 31) == ('Z' - 'A'))
+                return nsteps;
+        }
+    }
+}
+
 
 
 static void read_map(FILE *input)
@@ -95,10 +102,6 @@ static void read_map(FILE *input)
         if (r != 3) break;
 
         int idx = encode_location(dest);
-        if (idx >= STEP_MAP_RANGE)
-        {
-            printf("Range wtf %d\n", idx);
-        }
         step_map[idx].left = encode_location(left + 1);
         step_map[idx].right = encode_location(right);
     }
