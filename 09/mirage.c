@@ -70,13 +70,11 @@ static int parse_line(char *line)
 
 
     row -= 2;
-    cnumvalues += 1;
     int nextval = 0;
     for (;row >= 0; --row)
     {
-        nextval += numbers[row][cnumvalues];
+        nextval = numbers[row][0] - nextval;
         printf("%d\n", nextval);
-        ++cnumvalues;
     }
 
     printf("\n");
