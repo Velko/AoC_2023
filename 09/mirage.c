@@ -1,9 +1,19 @@
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdbool.h>
 
 
 #define BUFFER_SIZE     256
+#define NNUMBERS_MAX     25
 
-static int parse_line(const char *line);
+
+
+static int parse_line(char *line);
+
+
+int numbers[NNUMBERS_MAX][NNUMBERS_MAX];
+
 
 int main(void)
 {
@@ -25,7 +35,51 @@ int main(void)
 }
 
 
-static int parse_line(const char *line)
+static int parse_line(char *line)
 {
-    return 0;
+    char *savep;
+
+    char *token = strtok_r(line, " ", &savep);
+
+    int nvalues = 0;
+    while (token)
+    {
+        numbers[0][nvalues++] = atoi(token);
+        printf("%d ", numbers[0][nvalues-1]);
+        token = strtok_r(NULL, " ", &savep);
+    }
+
+    printf("\n");
+
+    bool all_zeros = false;
+    int cnumvalues = nvalues - 1;
+    int row;
+    for (row = 1; !all_zeros ; ++row)
+    {
+        all_zeros = true;
+        for (int i = 0; i < cnumvalues; ++i)
+        {
+            numbers[row][i] = numbers[row-1][i+1] - numbers[row-1][i];
+            printf("%d ", numbers[row][i]);
+            all_zeros &= numbers[row][i] == 0;
+        }
+        --cnumvalues;
+        printf("\n");
+    }
+    printf("r: %d n:%d\n", row, cnumvalues);
+
+
+    row -= 2;
+    cnumvalues += 1;
+    int nextval = 0;
+    for (;row >= 0; --row)
+    {
+        nextval += numbers[row][cnumvalues];
+        printf("%d\n", nextval);
+        ++cnumvalues;
+    }
+
+    printf("\n");
+
+    return nextval;
 }
