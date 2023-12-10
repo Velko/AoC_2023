@@ -6,6 +6,8 @@
 
 #define BUFFER_SIZE     150 /* input appears to be 140x140, but let's add a bit extra for \n and \0 */
 
+
+
 char maze[BUFFER_SIZE][BUFFER_SIZE];
 
 enum direction
@@ -16,10 +18,13 @@ enum direction
     RIGHT,
 };
 
+const char *dir_str = "XULDR";
+
 static int move_row(int row, enum direction dir);
 static int move_col(int col, enum direction dir);
 static bool can_enter(int row, int col, enum direction moving_to);
 static enum direction find_start_direction(int row, int col);
+static enum direction turn(int row, int col, enum direction moving_to);
 
 int main(void)
 {
@@ -40,22 +45,31 @@ int main(void)
         }
     }
 
-    enum direction start_dir =  find_start_direction(start_row, start_col);
+    enum direction dir =  find_start_direction(start_row, start_col);
 
     printf("Rows: %d\n", num_rows);
-    printf("Start: (%d, %d) -> %d\n", start_row, start_col, start_dir);
+    printf("0: (%d, %d) -> %c\n", start_row, start_col, dir_str[dir + 1]);
 
 
-    return 0;
+    int steps = 0;
 
-
-    int total = 0;
+    int row = start_row;
+    int col = start_col;
 
     for (;;)
     {
+        row = move_row(row, dir);
+        col = move_col(col, dir);
+        dir = turn(row, col, dir);
+        ++steps;
+
+        printf("%d: (%d, %d) -> %c\n", steps, row, col, dir_str[dir + 1]);
+
+        if (row == start_row && col == start_col)
+            break;
     }
 
-    printf("Result: %d\n", total);
+    printf("Result: %d\n", steps / 2);
 
     fclose(input);
     return 0;
@@ -102,11 +116,6 @@ static int move_col(int col, enum direction dir)
     }
 }
 
-/*
-    |    -    L    J    7    F    .    S
-
-*/
-
 static bool can_enter(int row, int col, enum direction moving_to)
 {
     switch (maze[row][col])
@@ -127,5 +136,30 @@ static bool can_enter(int row, int col, enum direction moving_to)
         return true; // really?
     default:
         return false;
+    }
+}
+
+/*
+    |    -    L    J    7    F    .    S
+*/
+
+static enum direction turn(int row, int col, enum direction moving_to)
+{
+    switch (maze[row][col])
+    {
+    case '|':
+        return moving_to;
+    case '-':
+        return moving_to;
+    case 'L':
+        return moving_to == LEFT ? UP : RIGHT;
+    case 'J':
+        return moving_to == RIGHT ? UP : LEFT;
+    case '7':
+        return moving_to == RIGHT ? DOWN : LEFT;
+    case 'F':
+        return moving_to == LEFT ? DOWN : RIGHT;
+    case 'S':
+        return -1; // does not matter anymore
     }
 }
