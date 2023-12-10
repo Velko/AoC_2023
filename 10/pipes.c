@@ -22,9 +22,10 @@ const char *dir_str = "XULDR";
 
 static int move_row(int row, enum direction dir);
 static int move_col(int col, enum direction dir);
-static bool can_enter(int row, int col, enum direction moving_to);
+static bool can_enter(char tile, enum direction moving_to);
 static enum direction find_start_direction(int row, int col);
-static enum direction turn(int row, int col, enum direction moving_to);
+static enum direction turn(char tile, enum direction moving_to);
+static int walk_path(int start_row, int start_col, enum direction start_dir);
 
 int main(void)
 {
@@ -45,23 +46,36 @@ int main(void)
         }
     }
 
-    enum direction dir =  find_start_direction(start_row, start_col);
+    enum direction start_dir =  find_start_direction(start_row, start_col);
 
     printf("Rows: %d\n", num_rows);
-    printf("0: (%d, %d) -> %c\n", start_row, start_col, dir_str[dir + 1]);
+    printf("0: (%d, %d) -> %c\n", start_row, start_col, dir_str[start_dir + 1]);
 
 
+    int steps = walk_path(start_row, start_col, start_dir);
+
+    // result p1: 6860
+    printf("Result: %d\n", steps / 2); // technically should have rounded up, but whatever, got lucky.
+
+    fclose(input);
+    return 0;
+}
+
+static int walk_path(int start_row, int start_col, enum direction start_dir)
+{
     int steps = 0;
 
     int row = start_row;
     int col = start_col;
+    enum direction dir = start_dir;
 
     for (;;)
     {
         row = move_row(row, dir);
         col = move_col(col, dir);
-        dir = turn(row, col, dir);
+        dir = turn(maze[row][col], dir);
         ++steps;
+
 
         printf("%d: (%d, %d) -> %c\n", steps, row, col, dir_str[dir + 1]);
 
@@ -69,10 +83,7 @@ int main(void)
             break;
     }
 
-    printf("Result: %d\n", steps / 2);
-
-    fclose(input);
-    return 0;
+    return steps;
 }
 
 static enum direction find_start_direction(int row, int col)
@@ -83,7 +94,7 @@ static enum direction find_start_direction(int row, int col)
         int try_row = move_row(row, start_dir);
         int try_col = move_col(col, start_dir);
 
-        if (can_enter(try_row, try_col, start_dir))
+        if (can_enter(maze[try_row][try_col], start_dir))
             return start_dir;
     }
 
@@ -116,9 +127,9 @@ static int move_col(int col, enum direction dir)
     }
 }
 
-static bool can_enter(int row, int col, enum direction moving_to)
+static bool can_enter(char tile, enum direction moving_to)
 {
-    switch (maze[row][col])
+    switch (tile)
     {
     case '|':
         return  moving_to == UP || moving_to == DOWN;
@@ -143,9 +154,9 @@ static bool can_enter(int row, int col, enum direction moving_to)
     |    -    L    J    7    F    .    S
 */
 
-static enum direction turn(int row, int col, enum direction moving_to)
+static enum direction turn(char tile, enum direction moving_to)
 {
-    switch (maze[row][col])
+    switch (tile)
     {
     case '|':
         return moving_to;
