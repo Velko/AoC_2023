@@ -1,6 +1,7 @@
 *
 !*/
 !*.*
+!Makefile
 bin/
 obj/
 .vscode/
