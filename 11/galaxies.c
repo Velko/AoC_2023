@@ -1,15 +1,29 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
 #define BUFFER_SIZE     300 /* input appears to be 140x140, but it could expand twice + extra place for \n and \0 */
+#define MAX_GALAXIES    500 /* based on input */
+
+struct coord
+{
+    int row;
+    int col;
+};
+
+
 
 char space[BUFFER_SIZE][BUFFER_SIZE];
+struct coord galaxies[MAX_GALAXIES];
+
 int num_rows = 0;
 int num_cols = 0;
+int num_galaxies = 0;
 
 static void expand_columns();
 static void expand_rows();
+static void load_galaxies();
 
 int main(void)
 {
@@ -26,11 +40,27 @@ int main(void)
     //printf("%d, %d\n", num_rows, num_cols);
     expand_columns();
     expand_rows();
+    load_galaxies();
 
-    for (int row = 0; row < num_rows; ++row)
+    // for (int row = 0; row < num_rows; ++row)
+    // {
+    //     printf("%s\n", space[row]);
+    // }
+
+    long total_distance = 0;
+
+    for (int first = 0; first < num_galaxies; ++first)
     {
-        printf("%s\n", space[row]);
+        for (int second = first + 1; second < num_galaxies; ++second)
+        {
+            int distance = abs(galaxies[first].row - galaxies[second].row)
+                        + abs(galaxies[first].col - galaxies[second].col);
+            total_distance += distance;
+        }
     }
+
+    // expected p1: 9639160
+    printf("Result 1: %ld\n", total_distance);
 
     return 0;
 }
@@ -77,4 +107,22 @@ static void expand_rows()
             ++row;
         }
     }
+}
+
+static void load_galaxies()
+{
+    for (int row = 0; row < num_rows; ++row)
+    {
+        for (int col = 0; col < num_cols; ++col)
+        {
+            if (space[row][col] == '#')
+            {
+                galaxies[num_galaxies].row = row;
+                galaxies[num_galaxies].col = col;
+                ++num_galaxies;
+            }
+        }
+    }
+
+    printf("Num galaxies: %d\n", num_galaxies);
 }
