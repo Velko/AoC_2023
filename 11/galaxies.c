@@ -6,7 +6,7 @@
 #define BUFFER_SIZE     150 /* input appears to be 140x140, add + extra place for \n and \0 */
 #define MAX_GALAXIES    500 /* based on input */
 
-#define EXPANSION_SCALE   2
+#define EXPANSION_SCALE   1000000
 
 struct coord
 {
@@ -58,7 +58,7 @@ int main(void)
     {
         for (int second = first + 1; second < num_galaxies; ++second)
         {
-            int distance = labs(galaxies[first].row - galaxies[second].row)
+            long distance = labs(galaxies[first].row - galaxies[second].row)
                         + labs(galaxies[first].col - galaxies[second].col);
             total_distance += distance;
         }
