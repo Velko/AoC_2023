@@ -3,19 +3,24 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-#define BUFFER_SIZE     300 /* input appears to be 140x140, but it could expand twice + extra place for \n and \0 */
+#define BUFFER_SIZE     150 /* input appears to be 140x140, add + extra place for \n and \0 */
 #define MAX_GALAXIES    500 /* based on input */
+
+#define EXPANSION_SCALE   2
 
 struct coord
 {
-    int row;
-    int col;
+    long row;
+    long col;
 };
-
 
 
 char space[BUFFER_SIZE][BUFFER_SIZE];
 struct coord galaxies[MAX_GALAXIES];
+
+long column_offsets[BUFFER_SIZE];
+long row_offsets[BUFFER_SIZE];
+
 
 int num_rows = 0;
 int num_cols = 0;
@@ -53,8 +58,8 @@ int main(void)
     {
         for (int second = first + 1; second < num_galaxies; ++second)
         {
-            int distance = abs(galaxies[first].row - galaxies[second].row)
-                        + abs(galaxies[first].col - galaxies[second].col);
+            int distance = labs(galaxies[first].row - galaxies[second].row)
+                        + labs(galaxies[first].col - galaxies[second].col);
             total_distance += distance;
         }
     }
@@ -68,8 +73,11 @@ int main(void)
 
 static void expand_columns()
 {
+    long col_offset = 0;
     for (int col = 0; col < num_cols; ++col)
     {
+        column_offsets[col] = col + col_offset;
+
         bool only_empty = true;
         for (int row = 0; row < num_rows; ++row)
         {
@@ -77,22 +85,17 @@ static void expand_columns()
         }
 
         if (only_empty)
-        {
-            //printf("Empty col: %d\n", col);
-            for (int row = 0; row < num_rows; ++row)
-            {
-                memmove(space[row]+col+1, space[row]+col, num_cols - col + 1);
-            }
-            ++num_cols;
-            ++col;
-        }
+            col_offset += EXPANSION_SCALE - 1;
     }
 }
 
 static void expand_rows()
 {
+    long row_offset = 0;
     for (int row = 0; row < num_rows; ++row)
     {
+        row_offsets[row] = row + row_offset;
+
         bool only_empty = true;
         for (int col = 0; col < num_cols; ++col)
         {
@@ -100,12 +103,7 @@ static void expand_rows()
         }
 
         if (only_empty)
-        {
-            //printf("Empty row: %d\n", row);
-            memmove(space + row + 1, space + row, (num_rows - row) * BUFFER_SIZE);
-            ++num_rows;
-            ++row;
-        }
+            row_offset += EXPANSION_SCALE - 1;
     }
 }
 
@@ -117,8 +115,8 @@ static void load_galaxies()
         {
             if (space[row][col] == '#')
             {
-                galaxies[num_galaxies].row = row;
-                galaxies[num_galaxies].col = col;
+                galaxies[num_galaxies].row = row_offsets[row];
+                galaxies[num_galaxies].col = column_offsets[col];
                 ++num_galaxies;
             }
         }
