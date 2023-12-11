@@ -211,3 +211,34 @@ non-Joker cards in succession.
 
 
 
+
+Day 11
+======
+
+Part 1
+------
+
+Started by loading the input. Allocated 2D array twice as big, as empty space could expand that much. Then the expansion itself,
+started by extending columns - copied the remainder of the each row forward one byte using memmove() at each column that needed
+expansion. Then did the same for rows, the only difference that now I could copy whole array forward, again using memmove(). Doing
+columns first meant that there were less looping, but it would have worked in the opposite order as well.
+
+The distance turned out to be Manhattan distance, so no mocking around with Pythagorean theorem calculations and square roots. Just
+add together the coordinate differences. Started to think about Dijkstra algorithm until realize that there are way too much "pairs"
+mentioned in the example, and it actually means all distances between each galaxies.
+
+Extracted the coordinates of each galaxy into an array and looped throug it. Done!
+
+
+Part 2
+------
+
+Ok, expanding each empty row and column million times would not have worked. The array would take 17.4 petabytes, for completely
+empty space. Even using virtual memory tricks on x86_64 would fall short.
+
+Obviously, the space should be expanded virtually. Filled 2 arrays, one to hold virtual coordinates for column, another for row.
+The rest was just looking up the coordinates when a galaxy is found. That and changing data types to *long*.
+
+The virtual expansion had a big for off-by-one error. Fortuately I first tested it if I get the same result as in Part 1 using
+expansion factor of 2.
+
