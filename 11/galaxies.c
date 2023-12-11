@@ -1,31 +1,31 @@
 #include <stdio.h>
+#include <string.h>
 
 
-#define BUFFER_SIZE     256
+#define BUFFER_SIZE     300 /* input appears to be 140x140, but it could expand twice + extra place for \n and \0 */
 
-static int parse_line(const char *line);
+char space[BUFFER_SIZE][BUFFER_SIZE];
 
 int main(void)
 {
-    char line[BUFFER_SIZE];
     FILE *input = fopen("input.txt", "r");
-
-    int total = 0;
-
-    for (;;)
+    int num_rows = 0;
+    int num_cols = 0;
+    for (;; ++num_rows)
     {
-        if (fgets(line, BUFFER_SIZE, input) == NULL) break; 
-        total += parse_line(line);
+        if (fgets(space[num_rows], BUFFER_SIZE, input) == NULL) break;
+        if (!num_cols)
+            num_cols = strchr(space[num_rows], '\n') - space[num_rows];
+        space[num_rows][num_cols] = 0;
+    }
+    fclose(input);
+
+    //printf("%d, %d\n", num_rows, num_cols);
+
+    for (int row = 0; row < num_rows; ++row)
+    {
+        printf("%s\n", space[row]);
     }
 
-    printf("Result: %d\n", total);
-
-    fclose(input);
-    return 0;
-}
-
-
-static int parse_line(const char *line)
-{
     return 0;
 }
