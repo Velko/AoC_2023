@@ -11,7 +11,6 @@
 
 static int process_line(char *line);
 static int process_record(const char template[], int start_idx, unsigned groups[]);
-static bool check_counts(char *record, unsigned *groups);
 static void self_tests();
 
 int main(void)
@@ -160,78 +159,8 @@ static bool fill_group(char *dest, const char *template, int grp)
     return template[p] != '#';
 }
 
-static int process_record_x(const char *template, unsigned *groups)
-{
-    char reconstructed[TEMPLATE_LEN];
-    int num_unknown = 0;
-    for (const char *s = template; *s; ++s)
-        num_unknown += *s == '?';
-
-    int possibilites = 0;
-
-    int unk_limit = 1 << num_unknown;
-
-    for (int unk = 0; unk < unk_limit; ++unk)
-    {
-        int i;
-        int unk_bit_idx = 0;
-        for (i = 0; template[i]; ++i)
-        {
-            if (template[i] == '?')
-            {
-                reconstructed[i] = (unk & (1 << unk_bit_idx)) ? '#' : '.';
-                ++unk_bit_idx;
-            }
-            else
-                reconstructed[i] = template[i];
-        }
-        reconstructed[i] = 0;
-
-        if (check_counts(reconstructed, groups))
-            ++possibilites;
-    }
-
-    return possibilites;
-}
-
-static bool check_counts(char *record, unsigned *groups)
-{
-    char *savep;
-    char *tok = strtok_r(record, ".", &savep);
-    int c_group;
-    for (c_group = 0; tok && groups[c_group]; ++c_group )
-    {
-        if (groups[c_group] != strlen(tok))
-            return false;
-
-        tok = strtok_r(NULL, ".", &savep);
-    }
-
-    return tok == NULL && groups[c_group] == 0;
-}
-
 static void self_tests()
 {
-    char record[20];
-    unsigned counts[]  = { 2, 1, 0 };
-
-    strcpy(record, "..##.#..");
-    bool actual = check_counts(record, counts);
-    assert(actual == true);
-
-    strcpy(record, "##...#");
-    actual = check_counts(record, counts);
-    assert(actual == true);
-
-    strcpy(record, "##...#.#");
-    actual = check_counts(record, counts);
-    assert(actual == false);
-
-
-    strcpy(record, "..##");
-    actual = check_counts(record, counts);
-    assert(actual == false);
-
     unsigned c1[] =  { 3, 0 };
     // not fit
     int num = process_record("..#?", 0, c1);
