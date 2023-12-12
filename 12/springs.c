@@ -79,11 +79,17 @@ static bool fill_group(char *dest, const char *template, int grp);
 static int process_record(const char template[], int start_idx, unsigned groups[])
 {
     char reconstructed[TEMPLATE_LEN];
+    strcpy(reconstructed, template);
 
     unsigned grp = *groups;
 
     if (grp == 0)
+    {
+        for (int i = start_idx; template[i]; ++i)
+            if (template[i] == '#')
+                return 0;
         return 1;
+    }
 
     int sub_counts = 0;
 
@@ -96,7 +102,6 @@ static int process_record(const char template[], int start_idx, unsigned groups[
         {
         case '#':
             /* arrived at beginning of known damage, must try to use all group */
-            strcpy(reconstructed, template);
             if (fill_group(reconstructed + start_idx, template + start_idx, grp))
             {
                 // good, go to next group
@@ -106,32 +111,29 @@ static int process_record(const char template[], int start_idx, unsigned groups[
                     reconstructed[start_idx + grp] = '.';
                     spacer = 1;
                 }
-                return process_record(reconstructed, start_idx + grp + spacer, groups + 1);
+                return sub_counts + process_record(reconstructed, start_idx + grp + spacer, groups + 1);
             }
             else
-                return 0; // did not fit, stop trying
+                return sub_counts; // did not fit, stop trying
             break;
         case '?':
             /* arrived at the beginning of unknown, can try one by one */
-            strcpy(reconstructed, template);
-            for (; template[start_idx] == '?' || template[start_idx] == '#' ; ++start_idx)
+            strcpy(reconstructed + start_idx, template + start_idx);
+            if (fill_group(reconstructed + start_idx, template + start_idx, grp))
             {
-                strcpy(reconstructed + start_idx, template + start_idx);
-                if (fill_group(reconstructed + start_idx, template + start_idx, grp))
+                // good, try to go deeper
+                int spacer = 0;
+                if (template[start_idx + grp] == '?')
                 {
-                    // good, try to go deeper
-                    int spacer = 0;
-                    if (template[start_idx + grp] == '?')
-                    {
-                        reconstructed[start_idx + grp] = '.';
-                        spacer = 1;
-                    }
-
-                    sub_counts += process_record(reconstructed, start_idx + grp + spacer, groups + 1);
+                    reconstructed[start_idx + grp] = '.';
+                    spacer = 1;
                 }
-                if (template[start_idx] == '?')
-                    reconstructed[start_idx] = '.';
+
+                sub_counts += process_record(reconstructed, start_idx + grp + spacer, groups + 1);
             }
+            if (template[start_idx] == '?')
+                reconstructed[start_idx] = '.';
+            ++start_idx;
             break;
         case 0:
             return sub_counts;
@@ -266,9 +268,19 @@ static void self_tests()
     num = process_record("?#?#?#?#?#?#?#?", 0, c3);
     assert(num == 1);
 
-    // ????.######..#####. 1,6,5
     // ????.######..#####.
     unsigned c4[]= {1,6,5,0};
     num = process_record("????.######..#####.", 0, c4);
     assert(num == 4);
+
+    // ?###???????? 3,2,1
+    unsigned c5[]= {3,2,1,0};
+    num = process_record("?###????????", 0, c5);
+    assert(num == 10);
+
+    //??#??????#???.? 4,3 9
+    unsigned c6[]= {4,3,0};
+    num = process_record("??#??????#???.?", 0, c6);
+    assert(num == 9);
+
 }
