@@ -160,9 +160,7 @@ static bool fill_group(const char *template, int grp)
     int p;
     for (p = 0; p < grp; ++p)
     {
-        if (template[p] == '#' || template[p] == '?')
-        {}
-        else
+        if (template[p] != '#' && template[p] != '?')
             /* did not fit */
             return false;
     }
