@@ -91,13 +91,10 @@ static int process_line(char *line)
     return result;
 }
 
-static bool fill_group(char *dest, const char *template, int grp);
+static bool fill_group(const char *template, int grp);
 
 static int process_record(const char template[], int start_idx, unsigned groups[])
 {
-    char reconstructed[TEMPLATE_LEN];
-    strcpy(reconstructed, template);
-
     unsigned grp = *groups;
 
     if (grp == 0)
@@ -119,13 +116,12 @@ static int process_record(const char template[], int start_idx, unsigned groups[
         {
         case '#':
             /* arrived at beginning of known damage, must try to use all group */
-            if (fill_group(reconstructed + start_idx, template + start_idx, grp))
+            if (fill_group(template + start_idx, grp))
             {
                 // good, go to next group
                 int spacer = 0;
                 if (template[start_idx + grp] == '?')
                 {
-                    reconstructed[start_idx + grp] = '.';
                     spacer = 1;
                 }
                 return sub_counts + process_record(template, start_idx + grp + spacer, groups + 1);
@@ -135,21 +131,17 @@ static int process_record(const char template[], int start_idx, unsigned groups[
             break;
         case '?':
             /* arrived at the beginning of unknown, can try one by one */
-            strcpy(reconstructed + start_idx, template + start_idx);
-            if (fill_group(reconstructed + start_idx, template + start_idx, grp))
+            if (fill_group(template + start_idx, grp))
             {
                 // good, try to go deeper
                 int spacer = 0;
                 if (template[start_idx + grp] == '?')
                 {
-                    reconstructed[start_idx + grp] = '.';
                     spacer = 1;
                 }
 
                 sub_counts += process_record(template, start_idx + grp + spacer, groups + 1);
             }
-            if (template[start_idx] == '?')
-                reconstructed[start_idx] = '.';
             ++start_idx;
             break;
         case 0:
@@ -163,13 +155,13 @@ static int process_record(const char template[], int start_idx, unsigned groups[
     return -1;
 }
 
-static bool fill_group(char *dest, const char *template, int grp)
+static bool fill_group(const char *template, int grp)
 {
     int p;
     for (p = 0; p < grp; ++p)
     {
         if (template[p] == '#' || template[p] == '?')
-            dest[p] = '#';
+        {}
         else
             /* did not fit */
             return false;
