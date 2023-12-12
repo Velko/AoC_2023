@@ -16,7 +16,7 @@ static void self_tests();
 
 int main(void)
 {
-    //self_tests();
+    self_tests();
 
     char line[BUFFER_SIZE];
     FILE *input = fopen("input.txt", "r");
@@ -42,7 +42,11 @@ static int process_line(char *line)
     char *outersp, *innersp;
     char *template = strtok_r(line, " ", &outersp);
 
-    char *groups_token = strtok_r(NULL, " ", &outersp);
+    printf("%s ", template);
+
+    char *groups_token = strtok_r(NULL, " \n", &outersp);
+
+    printf("%s ", groups_token);
 
     unsigned groups[MAX_GROUPS];
     int num_groups = 0;
@@ -53,8 +57,18 @@ static int process_line(char *line)
         token = strtok_r(NULL, ",", &innersp);
     }
 
+    int result = process_record(template, groups, num_groups);
+
+    printf("%d\n", result);
+
+    char *expected_p1_token = strtok_r(NULL, " \n", &outersp);
+    if (expected_p1_token)
+    {
+        assert(atoi(expected_p1_token) == result);
+    }
+
     //printf("Unk: %d, groups: %d tlen: %lu\n", num_unknown, num_groups, strlen(template));
-    return process_record(template, groups, num_groups);
+    return result;
 }
 
 static int process_record(const char *template, unsigned *groups, int num_groups)
