@@ -35,6 +35,7 @@ int main(void)
     }
 
     // p1 result: 7191
+    // p2 result: 6512849198636
     printf("Result: %ld\n", total);
 
     fclose(input);
@@ -62,17 +63,17 @@ static long process_line(char *line)
     }
     glob_groups[num_groups] = 0;
 
-    // char unfolded[TEMPLATE_LEN];
-    // sprintf(unfolded, "%s?%s?%s?%s?%s", template, template, template, template, template);
+    char unfolded[TEMPLATE_LEN];
+    sprintf(unfolded, "%s?%s?%s?%s?%s", template, template, template, template, template);
 
-    // for (int i = 0; i < num_groups; ++i)
-    // {
-    //     groups[i + num_groups * 1] = groups[i];
-    //     groups[i + num_groups * 2] = groups[i];
-    //     groups[i + num_groups * 3] = groups[i];
-    //     groups[i + num_groups * 4] = groups[i];
-    // }
-    // groups[num_groups * 5] = 0;
+    for (int i = 0; i < num_groups; ++i)
+    {
+        glob_groups[i + num_groups * 1] = glob_groups[i];
+        glob_groups[i + num_groups * 2] = glob_groups[i];
+        glob_groups[i + num_groups * 3] = glob_groups[i];
+        glob_groups[i + num_groups * 4] = glob_groups[i];
+    }
+    glob_groups[num_groups * 5] = 0;
 
     // printf("%s ", unfolded);
 
@@ -81,16 +82,16 @@ static long process_line(char *line)
     // printf("\n");
 
     reset_memo();
-    long result = process_record_memoized(template, 0, glob_groups);
+    long result = process_record_memoized(unfolded, 0, glob_groups);
 
-    //printf("%d\n", result);
+    //printf("%ld\n", result);
 
-    char *expected_p1_token = strtok_r(NULL, " \n", &outersp);
-    if (expected_p1_token)
-    {
-        int expected = atoi(expected_p1_token);
-        assert(expected == result);
-    }
+    // char *expected_p1_token = strtok_r(NULL, " \n", &outersp);
+    // if (expected_p1_token)
+    // {
+    //     int expected = atoi(expected_p1_token);
+    //     assert(expected == result);
+    // }
 
     //printf("Unk: %d, groups: %d tlen: %lu\n", num_unknown, num_groups, strlen(template));
     return result;
