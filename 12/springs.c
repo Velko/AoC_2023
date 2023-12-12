@@ -10,8 +10,8 @@
 #define TEMPLATE_LEN    128
 
 static int process_line(char *line);
-static int process_record(const char *template, unsigned *groups, int num_groups);
-static bool check_counts(char *record, unsigned *groups, int num_groups);
+static int process_record(const char *template, unsigned *groups);
+static bool check_counts(char *record, unsigned *groups);
 static void self_tests();
 
 int main(void)
@@ -56,8 +56,9 @@ static int process_line(char *line)
         groups[num_groups++] = atoi(token);
         token = strtok_r(NULL, ",", &innersp);
     }
+    groups[num_groups] = 0;
 
-    int result = process_record(template, groups, num_groups);
+    int result = process_record(template, groups);
 
     printf("%d\n", result);
 
@@ -71,7 +72,7 @@ static int process_line(char *line)
     return result;
 }
 
-static int process_record(const char *template, unsigned *groups, int num_groups)
+static int process_record(const char *template, unsigned *groups)
 {
     char reconstructed[TEMPLATE_LEN];
     int num_unknown = 0;
@@ -98,19 +99,19 @@ static int process_record(const char *template, unsigned *groups, int num_groups
         }
         reconstructed[i] = 0;
 
-        if (check_counts(reconstructed, groups, num_groups))
+        if (check_counts(reconstructed, groups))
             ++possibilites;
     }
 
     return possibilites;
 }
 
-static bool check_counts(char *record, unsigned *groups, int num_groups)
+static bool check_counts(char *record, unsigned *groups)
 {
     char *savep;
     char *tok = strtok_r(record, ".", &savep);
     int c_group;
-    for (c_group = 0; tok && c_group < num_groups; ++c_group )
+    for (c_group = 0; tok && groups[c_group]; ++c_group )
     {
         if (groups[c_group] != strlen(tok))
             return false;
@@ -118,29 +119,29 @@ static bool check_counts(char *record, unsigned *groups, int num_groups)
         tok = strtok_r(NULL, ".", &savep);
     }
 
-    return tok == NULL && c_group == num_groups;
+    return tok == NULL && groups[c_group] == 0;
 }
 
 static void self_tests()
 {
     char record[20];
-    unsigned counts[]  = { 2, 1 };
+    unsigned counts[]  = { 2, 1, 0 };
 
     strcpy(record, "..##.#..");
-    bool actual = check_counts(record, counts, 2);
+    bool actual = check_counts(record, counts);
     assert(actual == true);
 
     strcpy(record, "##...#");
-    actual = check_counts(record, counts, 2);
+    actual = check_counts(record, counts);
     assert(actual == true);
 
     strcpy(record, "##...#.#");
-    actual = check_counts(record, counts, 2);
+    actual = check_counts(record, counts);
     assert(actual == false);
 
 
     strcpy(record, "..##");
-    actual = check_counts(record, counts, 2);
+    actual = check_counts(record, counts);
     assert(actual == false);
 
 }
