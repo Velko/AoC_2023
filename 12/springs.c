@@ -26,11 +26,10 @@ int main(void)
     for (;;)
     {
         if (fgets(line, BUFFER_SIZE, input) == NULL) break;
-        int unk = process_line(line);
-        if (unk > total)
-            total = unk;
+        total += process_line(line);
     }
 
+    // p1 result: 7191
     printf("Result: %d\n", total);
 
     fclose(input);
