@@ -9,6 +9,8 @@
 #define MAX_GROUPS       40
 #define TEMPLATE_LEN    128
 
+unsigned glob_groups[MAX_GROUPS];
+
 static int process_line(char *line);
 static int process_record(const char template[], int start_idx, unsigned groups[]);
 static void self_tests();
@@ -48,15 +50,14 @@ static int process_line(char *line)
 
     //printf("%s ", groups_token);
 
-    unsigned groups[MAX_GROUPS];
     int num_groups = 0;
 
     char *token = strtok_r(groups_token, ",", &innersp);
     while (token) {
-        groups[num_groups++] = atoi(token);
+        glob_groups[num_groups++] = atoi(token);
         token = strtok_r(NULL, ",", &innersp);
     }
-    groups[num_groups] = 0;
+    glob_groups[num_groups] = 0;
 
     // char unfolded[TEMPLATE_LEN];
     // sprintf(unfolded, "%s?%s?%s?%s?%s", template, template, template, template, template);
@@ -76,7 +77,7 @@ static int process_line(char *line)
     //     printf("%d,", groups[i]);
     // printf("\n");
 
-    int result = process_record(template, 0, groups);
+    int result = process_record(template, 0, glob_groups);
 
     //printf("%d\n", result);
 
