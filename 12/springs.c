@@ -10,6 +10,7 @@
 #define TEMPLATE_LEN    128
 
 unsigned glob_groups[MAX_GROUPS];
+long process_memo[TEMPLATE_LEN][MAX_GROUPS];
 
 static long process_line(char *line);
 static long process_record(const char template[], int start_idx, unsigned groups[]);
@@ -19,7 +20,7 @@ static void self_tests();
 
 int main(void)
 {
-    self_tests();
+    //self_tests();
     //return 0;
 
     char line[BUFFER_SIZE];
@@ -99,9 +100,16 @@ static bool fill_group(const char *template, int grp);
 
 static long process_record_memoized(const char template[], int start_idx, unsigned groups[])
 {
-    long result = process_record(template, start_idx, groups);
-    printf("(%d, %ld) -> %ld\n", start_idx, groups - glob_groups, result);
-    return result;
+    int group_idx = groups - glob_groups;
+    if (process_memo[start_idx][group_idx] == -1)
+    {
+        long result = process_record(template, start_idx, groups);
+        process_memo[start_idx][group_idx] = result;
+        //printf("R: (%d, %d) -> %ld\n", start_idx, group_idx, result);
+        return result;
+    }
+    //printf("C: (%d, %d) -> %ld\n", start_idx, group_idx, process_memo[start_idx][group_idx]);
+    return process_memo[start_idx][group_idx];
 }
 
 static long process_record(const char template[], int start_idx, unsigned groups[])
@@ -181,6 +189,7 @@ static bool fill_group(const char *template, int grp)
 
 static void reset_memo()
 {
+    memset(process_memo, -1, sizeof(process_memo));
 }
 
 static void self_tests()
