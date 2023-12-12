@@ -21,7 +21,7 @@ int main(void)
     char line[BUFFER_SIZE];
     FILE *input = fopen("input.txt", "r");
 
-    int total = 0;
+    long total = 0;
 
     for (;;)
     {
@@ -30,7 +30,7 @@ int main(void)
     }
 
     // p1 result: 7191
-    printf("Result: %d\n", total);
+    printf("Result: %ld\n", total);
 
     fclose(input);
     return 0;
@@ -56,9 +56,26 @@ static int process_line(char *line)
         groups[num_groups++] = atoi(token);
         token = strtok_r(NULL, ",", &innersp);
     }
-    groups[num_groups] = 0;
 
-    int result = process_record(template, 0, groups);
+    char unfolded[TEMPLATE_LEN];
+    sprintf(unfolded, "%s?%s?%s?%s?%s", template, template, template, template, template);
+
+    for (int i = 0; i < num_groups; ++i)
+    {
+        groups[i + num_groups * 1] = groups[i];
+        groups[i + num_groups * 2] = groups[i];
+        groups[i + num_groups * 3] = groups[i];
+        groups[i + num_groups * 4] = groups[i];
+    }
+    groups[num_groups * 5] = 0;
+
+    // printf("%s ", unfolded);
+
+    // for (int i = 0; groups[i]; ++i)
+    //     printf("%d,", groups[i]);
+    // printf("\n");
+
+    int result = process_record(unfolded, 0, groups);
 
     printf("%d\n", result);
 
