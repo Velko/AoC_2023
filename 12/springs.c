@@ -6,8 +6,8 @@
 
 
 #define BUFFER_SIZE     256
-#define MAX_GROUPS        8
-#define TEMPLATE_LEN     25
+#define MAX_GROUPS       40
+#define TEMPLATE_LEN    128
 
 static int process_line(char *line);
 static int process_record(const char *template, unsigned *groups, int num_groups);
