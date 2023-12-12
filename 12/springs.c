@@ -128,7 +128,7 @@ static int process_record(const char template[], int start_idx, unsigned groups[
                     reconstructed[start_idx + grp] = '.';
                     spacer = 1;
                 }
-                return sub_counts + process_record(reconstructed, start_idx + grp + spacer, groups + 1);
+                return sub_counts + process_record(template, start_idx + grp + spacer, groups + 1);
             }
             else
                 return sub_counts; // did not fit, stop trying
@@ -146,7 +146,7 @@ static int process_record(const char template[], int start_idx, unsigned groups[
                     spacer = 1;
                 }
 
-                sub_counts += process_record(reconstructed, start_idx + grp + spacer, groups + 1);
+                sub_counts += process_record(template, start_idx + grp + spacer, groups + 1);
             }
             if (template[start_idx] == '?')
                 reconstructed[start_idx] = '.';
