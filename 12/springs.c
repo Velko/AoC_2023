@@ -11,8 +11,10 @@
 
 unsigned glob_groups[MAX_GROUPS];
 
-static int process_line(char *line);
-static int process_record(const char template[], int start_idx, unsigned groups[]);
+static long process_line(char *line);
+static long process_record(const char template[], int start_idx, unsigned groups[]);
+static long process_record_memoized(const char template[], int start_idx, unsigned groups[]);
+static void reset_memo();
 static void self_tests();
 
 int main(void)
@@ -39,7 +41,7 @@ int main(void)
 }
 
 
-static int process_line(char *line)
+static long process_line(char *line)
 {
     char *outersp, *innersp;
     char *template = strtok_r(line, " ", &outersp);
@@ -77,7 +79,8 @@ static int process_line(char *line)
     //     printf("%d,", groups[i]);
     // printf("\n");
 
-    int result = process_record(template, 0, glob_groups);
+    reset_memo();
+    long result = process_record_memoized(template, 0, glob_groups);
 
     //printf("%d\n", result);
 
@@ -94,7 +97,14 @@ static int process_line(char *line)
 
 static bool fill_group(const char *template, int grp);
 
-static int process_record(const char template[], int start_idx, unsigned groups[])
+static long process_record_memoized(const char template[], int start_idx, unsigned groups[])
+{
+    long result = process_record(template, start_idx, groups);
+    printf("(%d, %ld) -> %ld\n", start_idx, groups - glob_groups, result);
+    return result;
+}
+
+static long process_record(const char template[], int start_idx, unsigned groups[])
 {
     unsigned grp = *groups;
 
@@ -106,7 +116,7 @@ static int process_record(const char template[], int start_idx, unsigned groups[
         return 1;
     }
 
-    int sub_counts = 0;
+    long sub_counts = 0;
 
     for (;;)
     {
@@ -125,7 +135,7 @@ static int process_record(const char template[], int start_idx, unsigned groups[
                 {
                     spacer = 1;
                 }
-                return sub_counts + process_record(template, start_idx + grp + spacer, groups + 1);
+                return sub_counts + process_record_memoized(template, start_idx + grp + spacer, groups + 1);
             }
             else
                 return sub_counts; // did not fit, stop trying
@@ -141,7 +151,7 @@ static int process_record(const char template[], int start_idx, unsigned groups[
                     spacer = 1;
                 }
 
-                sub_counts += process_record(template, start_idx + grp + spacer, groups + 1);
+                sub_counts += process_record_memoized(template, start_idx + grp + spacer, groups + 1);
             }
             ++start_idx;
             break;
@@ -166,6 +176,11 @@ static bool fill_group(const char *template, int grp)
             return false;
     }
     return template[p] != '#';
+}
+
+
+static void reset_memo()
+{
 }
 
 static void self_tests()
