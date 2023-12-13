@@ -27,7 +27,7 @@ int main(void)
 }
 
 static int check_reflection_horizontal(int nlines);
-
+static int transpose(int nlines);
 
 static int check_mirror(FILE *input)
 {
@@ -43,10 +43,13 @@ static int check_mirror(FILE *input)
         ++nlines;
     }
 
-    // for (int i = 0; i < nlines; ++i)
-    //     printf("%s\n", mirror[i]);
 
     // printf("----------------------------------\n");
+
+    nlines = transpose(nlines);
+
+    // for (int i = 0; i < nlines; ++i)
+    //     printf("%s\n", mirror[i]);
 
     int row = check_reflection_horizontal(nlines);
 
@@ -70,4 +73,21 @@ static int check_reflection_horizontal(int nlines)
     }
 
     return -1;
+}
+
+static int transpose(int nlines)
+{
+    char source[MIRROR_SIZE][MIRROR_SIZE];
+    memcpy(source, mirror, sizeof(mirror));
+
+    int ncols = strlen(source[0]);
+
+    for (int c = 0; c < ncols; ++c)
+    {
+        for (int r = 0; r < nlines; ++r)
+            mirror[c][r] = source[r][c];
+        mirror[c][nlines] = 0;
+    }
+
+    return ncols;
 }
