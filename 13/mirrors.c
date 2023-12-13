@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include <assert.h>
 
 
 #define MIRROR_SIZE     25
@@ -17,9 +18,10 @@ int main(void)
 
     while (!feof(input))
     {
-        total = check_mirror(input);
+        total += check_mirror(input);
     }
 
+    // Result p1: 34918
     printf("Result: %d\n", total);
 
     fclose(input);
@@ -43,17 +45,23 @@ static int check_mirror(FILE *input)
         ++nlines;
     }
 
-
-    // printf("----------------------------------\n");
-
-    nlines = transpose(nlines);
-
     // for (int i = 0; i < nlines; ++i)
     //     printf("%s\n", mirror[i]);
 
-    int row = check_reflection_horizontal(nlines);
+    // printf("----------------------------------\n");
 
-    return row;
+
+
+    int row = check_reflection_horizontal(nlines);
+    if (row != -1) return row * 100;
+
+    nlines = transpose(nlines);
+    int col = check_reflection_horizontal(nlines);
+
+    if (col != -1) return col;
+
+    assert(!"Not found!");
+    return -1;
 }
 
 
