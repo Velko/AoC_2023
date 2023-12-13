@@ -31,6 +31,8 @@ int main(void)
 static int check_reflection_horizontal(int nlines);
 static int transpose(int nlines);
 static int check_reflections(int nlines);
+static int check_with_smudge_correction(int nlines);
+
 
 static int check_mirror(FILE *input)
 {
@@ -53,13 +55,45 @@ static int check_mirror(FILE *input)
 
 
 
-    int result = check_reflections(nlines);
+    int result = check_with_smudge_correction(nlines);
 
     if (result != -1) return result;
 
     assert(!"Not found!");
     return -1;
 }
+
+static int check_with_smudge_correction(int nlines)
+{
+    char original[MIRROR_SIZE][MIRROR_SIZE];
+    memcpy(original, mirror, sizeof(mirror));
+
+    int ncols = strlen(mirror[0]);
+    int orig_reflection = check_reflections(nlines);
+
+    //printf("Origin: %d\n", orig_reflection);
+
+    for (int r = 0; r < nlines; ++r)
+    {
+        for (int c = 0; c < ncols; ++c)
+        {
+            memcpy(mirror, original, sizeof(mirror));
+            mirror[r][c] = mirror[r][c] == '.' ? '#' : '.';
+            //printf("(%d, %d)\n", r, c);
+
+            int new_reflection = check_reflections(nlines);
+            if (new_reflection != -1 && new_reflection != orig_reflection)
+            {
+                //printf("New: %d\n", new_reflection);
+                return new_reflection;
+            }
+        }
+    }
+
+    assert(!"Not found!");
+    return -1;
+}
+
 
 static int check_reflections(int nlines)
 {
