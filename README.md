@@ -150,7 +150,7 @@ Use the Force, Luke!
 Part 2 - beyound the solution
 -----------------------------
 
-But, you cannot control it. This is a dangerous time for you. When you will be tempted by the dark side of the force. 
+But, you cannot control it. This is a dangerous time for you. When you will be tempted by the dark side of the force.
 -- Obi-Wan Kenobi
 
 My brute-force solution was still in the C# solution. I wanted to see how quick it will run in pure C. Pulled out the
@@ -171,7 +171,7 @@ Day 6
 Part 1
 ------
 
-The description of the Day 6 described a brute-force algorithm for the calculations. Since the input values were small, I 
+The description of the Day 6 described a brute-force algorithm for the calculations. Since the input values were small, I
 did not bother with more clever solutions. Just checked all the possibilities.
 
 The input data was also too small for me to bother with parsing. Just hardcoded the values.
@@ -241,4 +241,91 @@ The rest was just looking up the coordinates when a galaxy is found. That and ch
 
 The virtual expansion had a big for off-by-one error. Fortuately I first tested it if I get the same result as in Part 1 using
 expansion factor of 2.
+
+
+Day 12
+======
+
+Part1
+-----
+
+For this one I went for a simple brute-force solution. I knew it will probably not work for second part, but whatever, will think about it when I'll get there.
+
+Checked that there are maximum 19 question marks, let's do a loop for each combination ranging from 0 to
+2^number_of_question_marks. Replace each ? with . or # depending if corresponding bit is 0 or 1. Relatively
+straightforward.
+
+Struggled a bit with comparing the reconstructed line with the group numbers, until I realized that I can parse
+them using strtok() and get the string length.
+
+Part 2
+------
+
+Ok this will be a tough one! Looping from 0 to 2^19 (524288) is nothing. Looping up to 2^99 is whole another story,
+I need a better algorithm.
+
+First, however, I need a strong test base to test my algorithm against. I modified the program to output original
+input lines, each amended with per-line result. Then adjusted the parser to also extract that and check if processing
+returns the anticipated number.
+
+The new algorithm was: take the input template and try to fill it with # and . according to each group counts. Once
+a valid solution for the group is found, recurse for the next group. Once reached end of template or group, return
+back if it matches or not.
+
+When scanning the template, there are 4 possible options:
+    * found '.' - just scan further
+    * found '#' - make a "hard match" if the group can be placed and subsequent recursion is successful
+    * found '?' - make a "soft match" - try to place a group, but failing to do that just continue to next
+    * reached end of template - return what's collected so far
+
+When there are no more groups to check, one should check if the end of template requires any '#', or the remainder
+can be filled by '.'. Former means failure, latter - successful match.
+
+It took a lot of debugging to get everything right, but at the end I got it to the point where it was able to solve
+Part 1 successfully again. Could not had done it without the test-cases I generated earlier.
+
+Now it should be able to solve Part 2 as well? Added the "unfolding" logic, ran it. First few lines went fine and
+then it got stuck. Is there a bug? Or it's just a complicated case and takes a while?
+
+After had checked everything again, I did not find any possible infinite loops, it must be complicated case.  For
+Part 1 there was 64 solutions, so it must be pretty hard. Should I just wait or think of better solution?
+
+Headed over to Reddit and saw that everybody talks about technique called memoization, decided to check out what that
+is about. Given that nothing else changes, if you call a function with same parameters, it should return same result.
+
+What do I pass to my recursive function? Reconstruced string, index where to continue and group. Do I need to hash
+them all together and use as a key? In C? Seriously?
+
+Wait, do I need to pass the reconstructed string, I'm not looking at any position smaller than the starting index.
+Can I just use the original template? Changed - still works. Hey, now I'm building the reconstructed string but
+never actually read anything from it. I must be able to eliminate that.
+
+The reconstructed string was an invaluable resource while I was debugging the algorithm, but now it's time to say
+goodbye. Removed, everyting still works.
+
+Now I', passing in just a constant string, starting index and group. This looks more memo-izable. I created a 2D array
+addressable by starting indices and group indices. Fill everyting with -1 and call the function only when the array
+cell is -1. Return the cached value otherwise.
+
+That did it!
+
+
+Day 13
+======
+
+Part 1
+------
+
+After loading the input into array of strings, implemented a row-by-row mirror scanning. It's easier, because I can use
+standard strcmp() function for that. What about columns? Felt lazy wrote a code to transpose the data. Now the columns
+are rows and I can use same row-by-row scanner.
+
+Part 2
+------
+
+The amount of data is quite small, I decided to do a brute-force again. Flip each cell and check with the previous function.
+
+Had to do bit of head-scratching, because sometimes it could not found the solution. Turns out - if I flip a cell that does
+not impact the original solution, can still get the original back. Some proper "skip" logic is in order.
+
 
