@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 
 
 #define MIRROR_SIZE     25
@@ -25,6 +26,8 @@ int main(void)
     return 0;
 }
 
+static int check_reflection_horizontal(int nlines);
+
 
 static int check_mirror(FILE *input)
 {
@@ -45,5 +48,26 @@ static int check_mirror(FILE *input)
 
     // printf("----------------------------------\n");
 
-    return 0;
+    int row = check_reflection_horizontal(nlines);
+
+    return row;
+}
+
+
+static int check_reflection_horizontal(int nlines)
+{
+    for (int split_row = 1; split_row < nlines; ++split_row)
+    {
+        if (strcmp(mirror[split_row], mirror[split_row - 1]) == 0)
+        {
+            bool all_match = true;
+            for (int dist = 1; dist + split_row < nlines && split_row - dist - 1 >= 0 && all_match; ++dist)
+                all_match &= strcmp(mirror[split_row + dist], mirror[split_row - dist - 1]) == 0;
+
+            if (all_match)
+                return split_row;
+        }
+    }
+
+    return -1;
 }
