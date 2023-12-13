@@ -22,17 +22,17 @@ int main(void)
     }
 
     // Result p1: 34918
+    // Result p2: 33054
     printf("Result: %d\n", total);
 
     fclose(input);
     return 0;
 }
 
-static int check_reflection_horizontal(int nlines);
+static int check_reflection_horizontal(int nlines, int skip_line);
 static int transpose(int nlines);
-static int check_reflections(int nlines);
+static int check_reflections(int nlines, int skip_score);
 static int check_with_smudge_correction(int nlines);
-
 
 static int check_mirror(FILE *input)
 {
@@ -48,13 +48,6 @@ static int check_mirror(FILE *input)
         ++nlines;
     }
 
-    // for (int i = 0; i < nlines; ++i)
-    //     printf("%s\n", mirror[i]);
-
-    // printf("----------------------------------\n");
-
-
-
     int result = check_with_smudge_correction(nlines);
 
     if (result != -1) return result;
@@ -69,9 +62,7 @@ static int check_with_smudge_correction(int nlines)
     memcpy(original, mirror, sizeof(mirror));
 
     int ncols = strlen(mirror[0]);
-    int orig_reflection = check_reflections(nlines);
-
-    //printf("Origin: %d\n", orig_reflection);
+    int orig_reflection = check_reflections(nlines, 0);
 
     for (int r = 0; r < nlines; ++r)
     {
@@ -79,12 +70,10 @@ static int check_with_smudge_correction(int nlines)
         {
             memcpy(mirror, original, sizeof(mirror));
             mirror[r][c] = mirror[r][c] == '.' ? '#' : '.';
-            //printf("(%d, %d)\n", r, c);
 
-            int new_reflection = check_reflections(nlines);
-            if (new_reflection != -1 && new_reflection != orig_reflection)
+            int new_reflection = check_reflections(nlines, orig_reflection);
+            if (new_reflection != -1)
             {
-                //printf("New: %d\n", new_reflection);
                 return new_reflection;
             }
         }
@@ -95,23 +84,24 @@ static int check_with_smudge_correction(int nlines)
 }
 
 
-static int check_reflections(int nlines)
+static int check_reflections(int nlines, int skip_score)
 {
-    int row = check_reflection_horizontal(nlines);
+    int row = check_reflection_horizontal(nlines, skip_score / 100); // zero is also fine as non-existing skip_line
     if (row != -1) return row * 100;
 
     nlines = transpose(nlines);
-    int col = check_reflection_horizontal(nlines);
+
+    int col = check_reflection_horizontal(nlines, skip_score % 100);
 
     return col;
 }
 
 
-static int check_reflection_horizontal(int nlines)
+static int check_reflection_horizontal(int nlines, int skip_line)
 {
     for (int split_row = 1; split_row < nlines; ++split_row)
     {
-        if (strcmp(mirror[split_row], mirror[split_row - 1]) == 0)
+        if (strcmp(mirror[split_row], mirror[split_row - 1]) == 0 && split_row != skip_line)
         {
             bool all_match = true;
             for (int dist = 1; dist + split_row < nlines && split_row - dist - 1 >= 0 && all_match; ++dist)
