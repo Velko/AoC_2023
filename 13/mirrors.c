@@ -30,6 +30,7 @@ int main(void)
 
 static int check_reflection_horizontal(int nlines);
 static int transpose(int nlines);
+static int check_reflections(int nlines);
 
 static int check_mirror(FILE *input)
 {
@@ -52,16 +53,23 @@ static int check_mirror(FILE *input)
 
 
 
+    int result = check_reflections(nlines);
+
+    if (result != -1) return result;
+
+    assert(!"Not found!");
+    return -1;
+}
+
+static int check_reflections(int nlines)
+{
     int row = check_reflection_horizontal(nlines);
     if (row != -1) return row * 100;
 
     nlines = transpose(nlines);
     int col = check_reflection_horizontal(nlines);
 
-    if (col != -1) return col;
-
-    assert(!"Not found!");
-    return -1;
+    return col;
 }
 
 
