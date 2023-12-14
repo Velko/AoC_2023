@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 
 #define BUFFER_SIZE     128
@@ -16,12 +17,18 @@ struct packed_platform
     unsigned long long bits[BUFFER_SIZE][BUFFER_SIZE / PACK_SIZE];
 };
 
+#define MAX_HISTORY     256  // let's try with something, then will see
+struct packed_platform history[MAX_HISTORY];
+int nhistory;
+
+
 static void roll_all_north();
 static void roll_all_west();
 static void roll_all_south();
 static void roll_all_east();
 static int count_load();
 static void pack_state(struct packed_platform *packed);
+static int find_loop();
 
 int main(void)
 {
@@ -38,29 +45,41 @@ int main(void)
 
     ncols = strlen(platform[0]) - 1; // discard \0
 
-    for (int cycles = 0; cycles < NUM_CYCLES; ++cycles)
+
+    pack_state(history); // place initial state
+    nhistory = 1;
+
+    int loop_start = 0;
+
+    int cycles;
+    for (cycles = 0; loop_start == 0; ++cycles)
     {
         roll_all_north();
         roll_all_west();
         roll_all_south();
         roll_all_east();
-
-        struct packed_platform packed;
-
-        pack_state(&packed);
-
-        for (int r = 0; r < BUFFER_SIZE; ++r)
-        {
-            for (unsigned p = 0; p < BUFFER_SIZE / PACK_SIZE; ++p)
-                printf("%llx ", packed.bits[r][p]);
-        }
-        printf("\n");
+        loop_start = find_loop();
     }
 
+    int loop_size = nhistory - loop_start;
+    printf("Loop found [%d..%d) size %d\n", loop_start, nhistory, loop_size);
+
+    int loops = (NUM_CYCLES - loop_start - loop_size) / loop_size;
+    cycles += loops * loop_size;
+    printf("Skipped %d loops, restarting at %d\n", loops, cycles);
+
+    for (; cycles < NUM_CYCLES; ++cycles)
+    {
+        roll_all_north();
+        roll_all_west();
+        roll_all_south();
+        roll_all_east();
+    }
 
     int load = count_load();
 
     // result p1: 110779
+    // result p2: 86069
     printf("Result: %d\n", load);
 
     return 0;
@@ -154,6 +173,37 @@ static int count_load()
 
     return load;
 }
+
+
+static int find_loop()
+{
+    //pack new state
+    pack_state(history + nhistory);
+
+    // for (int r = 0; r < BUFFER_SIZE; ++r)
+    // {
+    //     for (unsigned p = 0; p < BUFFER_SIZE / PACK_SIZE; ++p)
+    //         printf("%llx", history[nhistory].bits[r][p]);
+    // }
+    // printf("\n");
+
+    // check if seen before
+    for (int h = 0; h < nhistory; ++h)
+    {
+        if (memcmp(history + h, history + nhistory, sizeof(struct packed_platform)) == 0)
+            return h;
+    }
+
+    ++nhistory;
+    if (nhistory >= MAX_HISTORY)
+    {
+        printf("History full\n");
+        exit(1);
+    }
+
+    return 0;
+}
+
 
 static void pack_state(struct packed_platform *packed)
 {
