@@ -27,7 +27,7 @@ int main(void)
 
 
     // for (int row = 0; row < nrows; ++row)
-    //     printf("%s", platform[row]);
+    //      printf("%s", platform[row]);
 
     int load = count_load();
 
@@ -40,9 +40,9 @@ int main(void)
 
 static void roll_all_north()
 {
-    for (int r = 1; r < nrows; ++r)  // no point trying to roll row 0
+    for (int c = 0; c < ncols; ++c)
     {
-        for (int c = 0; c < ncols; ++c)
+        for (int r = 1; r < nrows; ++r)  // no point trying to roll row 0
         {
             if (platform[r][c] == 'O')
             {
