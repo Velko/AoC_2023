@@ -7,6 +7,7 @@ char platform[BUFFER_SIZE][BUFFER_SIZE];
 
 static void roll_all(int nrows);
 static void roll_single(int row, int col);
+static int count_load(int nrows);
 
 int main(void)
 {
@@ -25,8 +26,8 @@ int main(void)
     for (int row = 0; row < nrows; ++row)
         printf("%s", platform[row]);
 
-    int total = 0;
-    printf("Result: %d\n", nrows);
+    int load = count_load(nrows);
+    printf("Result: %d\n", load);
 
     return 0;
 }
@@ -52,4 +53,16 @@ static void roll_single(int row, int col)
         platform[row][col] = '.';
         --row;
     }
+}
+
+static int count_load(int nrows)
+{
+    int load = 0;
+    for (int col = 0; platform[0][col]; ++col)
+    {
+        for (int row = 0; platform[row][col] == 'O' && row < nrows; ++row)
+            ++load;
+    }
+
+    return load;
 }
