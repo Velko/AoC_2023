@@ -3,6 +3,7 @@
 
 
 #define BUFFER_SIZE     120
+#define NUM_CYCLES      1000000000
 
 char platform[BUFFER_SIZE][BUFFER_SIZE];
 int nrows;
@@ -26,12 +27,15 @@ int main(void)
 
     ncols = strlen(platform[0]) - 1; // discard \0
 
-    for (int cycles = 0; cycles < 3; ++cycles)
+    for (int cycles = 0; cycles < NUM_CYCLES; ++cycles)
     {
         roll_all_north();
         roll_all_west();
         roll_all_south();
         roll_all_east();
+
+        if (cycles % (NUM_CYCLES / 1000) == 0)
+            printf("%g\n", cycles * 100.0 / NUM_CYCLES);
     }
 
     for (int row = 0; row < nrows; ++row)
