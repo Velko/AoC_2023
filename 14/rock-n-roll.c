@@ -2,22 +2,33 @@
 #include <string.h>
 
 
-#define BUFFER_SIZE     120
+#define BUFFER_SIZE     128
 #define NUM_CYCLES      1000000000
+#define BITS_PER_BYTE   8
+#define PACK_SIZE       (BITS_PER_BYTE * sizeof(unsigned long long))
 
 char platform[BUFFER_SIZE][BUFFER_SIZE];
 int nrows;
 int ncols;
+
+struct packed_platform
+{
+    unsigned long long bits[BUFFER_SIZE][BUFFER_SIZE / PACK_SIZE];
+};
 
 static void roll_all_north();
 static void roll_all_west();
 static void roll_all_south();
 static void roll_all_east();
 static int count_load();
+static void pack_state(struct packed_platform *packed);
 
 int main(void)
 {
     FILE *input = fopen("input.txt", "r");
+
+    memset(platform, 0, sizeof(platform));
+
     nrows = 0;
     for (;;++nrows)
     {
@@ -34,12 +45,18 @@ int main(void)
         roll_all_south();
         roll_all_east();
 
-        if (cycles % (NUM_CYCLES / 1000) == 0)
-            printf("%g\n", cycles * 100.0 / NUM_CYCLES);
+        struct packed_platform packed;
+
+        pack_state(&packed);
+
+        for (int r = 0; r < BUFFER_SIZE; ++r)
+        {
+            for (unsigned p = 0; p < BUFFER_SIZE / PACK_SIZE; ++p)
+                printf("%llx ", packed.bits[r][p]);
+        }
+        printf("\n");
     }
 
-    for (int row = 0; row < nrows; ++row)
-         printf("%s", platform[row]);
 
     int load = count_load();
 
@@ -123,9 +140,6 @@ static void roll_all_east()
     }
 }
 
-
-
-
 static int count_load()
 {
     int load = 0;
@@ -139,4 +153,20 @@ static int count_load()
     }
 
     return load;
+}
+
+static void pack_state(struct packed_platform *packed)
+{
+    memset(packed, 0, sizeof(struct packed_platform));
+
+    for (int r = 0; r < nrows; ++r)
+    {
+        for (int c = 0; c < ncols; ++c)
+        {
+            if (platform[r][c] == 'O')
+            {
+                packed->bits[r][c / PACK_SIZE] |= 1ULL << (c % PACK_SIZE);
+            }
+        }
+    }
 }
