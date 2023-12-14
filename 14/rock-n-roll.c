@@ -27,6 +27,8 @@ int main(void)
         printf("%s", platform[row]);
 
     int load = count_load(nrows);
+
+    // result p1: 110779
     printf("Result: %d\n", load);
 
     return 0;
@@ -58,10 +60,13 @@ static void roll_single(int row, int col)
 static int count_load(int nrows)
 {
     int load = 0;
-    for (int col = 0; platform[0][col]; ++col)
+    for (int row = 0; row < nrows; ++row)
     {
-        for (int row = 0; platform[row][col] == 'O' && row < nrows; ++row)
-            ++load;
+        for (int col = 0; platform[row][col]; ++col)
+        {
+            if (platform[row][col] == 'O')
+                load += nrows - row;
+        }
     }
 
     return load;
