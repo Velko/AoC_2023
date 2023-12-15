@@ -24,6 +24,7 @@ static char parse_lens(char *str, struct lens *lens);
 static void upsert_lens(struct lens *box, struct lens *new_lens);
 static void remove_lens(struct lens *box, const char *label);
 static void print_boxes();
+static long calculate_power();
 
 int main(void)
 {
@@ -31,15 +32,13 @@ int main(void)
     fgets(line, BUFFER_SIZE, input);
     fclose(input);
 
-    int total = 0;
-
     memset(boxes, 0, sizeof(boxes));
 
     char *savep;
     char *token = strtok_r(line, ",\n", &savep);
     while (token)
     {
-        printf("\nAfter \"%s\"\n", token);
+        //printf("\nAfter \"%s\"\n", token);
         struct lens lens;
         char op = parse_lens(token, &lens);
         int box = calc_hash(lens.label);
@@ -60,16 +59,17 @@ int main(void)
             break;
         }
 
-        print_boxes();
-
-        //total += calc_hash(token);
+        //print_boxes();
 
         token = strtok_r(NULL, ",\n", &savep);
     }
 
 
+    long power = calculate_power();
+
     // result p1: 516070
-    printf("Result: %d\n", total);
+    // result p2: 244981
+    printf("Result: %ld\n", power);
 
 
     return 0;
@@ -155,4 +155,24 @@ static void print_boxes()
             printf("\n");
         }
     }
+}
+
+static long calculate_power()
+{
+    long total_power = 0;
+
+    for (long b = 0; b < 256; ++b)
+    {
+        if (boxes[b][0].focal)
+        {
+            for (int s = 0; boxes[b][s].focal; ++s)
+            {
+                long lens_power = (b + 1) * (s + 1) * boxes[b][s].focal;
+                //printf("%s %ld\n", boxes[b][s].label, lens_power);
+                total_power += lens_power;
+            }
+        }
+    }
+
+    return total_power;
 }
