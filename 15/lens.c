@@ -12,8 +12,18 @@ struct lens
     int focal;
 };
 
+
+#define NUM_BOXES       256
+#define BOX_SIZE        100
+
+struct lens boxes[NUM_BOXES][BOX_SIZE];
+
+
 static int calc_hash(const char *str);
 static char parse_lens(char *str, struct lens *lens);
+static void upsert_lens(struct lens *box, struct lens *new_lens);
+static void remove_lens(struct lens *box, const char *label);
+static void print_boxes();
 
 int main(void)
 {
@@ -23,15 +33,34 @@ int main(void)
 
     int total = 0;
 
+    memset(boxes, 0, sizeof(boxes));
+
     char *savep;
     char *token = strtok_r(line, ",\n", &savep);
     while (token)
     {
+        printf("\nAfter \"%s\"\n", token);
         struct lens lens;
         char op = parse_lens(token, &lens);
         int box = calc_hash(lens.label);
 
-        printf("%c [%d] %s %d\n", op, box, lens.label, lens.focal);
+        //printf("%c [%d] %s %d\n", op, box, lens.label, lens.focal);
+
+        switch (op)
+        {
+        case '-':
+            remove_lens(boxes[box], lens.label);
+            break;
+        case '=':
+            upsert_lens(boxes[box], &lens);
+            break;
+        default:
+            printf("Invalid op\n");
+            exit(1);
+            break;
+        }
+
+        print_boxes();
 
         //total += calc_hash(token);
 
@@ -82,4 +111,48 @@ static char parse_lens(char *str, struct lens *lens)
     lens->focal = atoi(focal);
 
     return '=';
+}
+
+
+static void upsert_lens(struct lens *box, struct lens *new_lens)
+{
+    int i;
+    for (i = 0; box[i].focal; ++i)
+    {
+        if (strcmp(box[i].label, new_lens->label) == 0)
+        {
+            box[i].focal = new_lens->focal;
+            return;
+        }
+    }
+    memcpy(box + i, new_lens, sizeof(struct lens));
+}
+
+static void remove_lens(struct lens *box, const char *label)
+{
+    for (int i = 0; box[i].focal; ++i)
+    {
+        if (strcmp(box[i].label, label) == 0)
+        {
+            // 012345678
+            //     |
+            // 01235678
+            memmove(box + i, box + i + 1, sizeof(struct lens) * (BOX_SIZE - i - 1));
+        }
+    }
+}
+
+static void print_boxes()
+{
+    for (int b = 0; b < 256; ++b)
+    {
+        if (boxes[b][0].focal)
+        {
+            printf("Box %d: ", b);
+
+            for (int l = 0; boxes[b][l].focal; ++l)
+                printf("[%s %d] ", boxes[b][l].label, boxes[b][l].focal);
+            printf("\n");
+        }
+    }
 }
