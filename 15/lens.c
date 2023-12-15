@@ -1,31 +1,47 @@
 #include <stdio.h>
+#include <string.h>
 
+#define BUFFER_SIZE     24 * 1024       // the input is one huge string
 
-#define BUFFER_SIZE     256
+char line[BUFFER_SIZE];
 
-static int parse_line(const char *line);
+static int calc_hash(const char *str);
 
 int main(void)
 {
-    char line[BUFFER_SIZE];
     FILE *input = fopen("input.txt", "r");
+    fgets(line, BUFFER_SIZE, input);
+    fclose(input);
 
     int total = 0;
 
-    for (;;)
+    char *savep;
+    char *token = strtok_r(line, ",\n", &savep);
+    while (token)
     {
-        if (fgets(line, BUFFER_SIZE, input) == NULL) break;
-        total += parse_line(line);
+        total += calc_hash(token);
+
+        token = strtok_r(NULL, ",\n", &savep);
     }
 
+
+    // result p1: 516070
     printf("Result: %d\n", total);
 
-    fclose(input);
+
     return 0;
 }
 
 
-static int parse_line(const char *line)
+static int calc_hash(const char *str)
 {
-    return 0;
+    unsigned char hash = 0;
+
+    for (const char *c = str; *c; ++c)
+    {
+        hash = (hash + *c) * 17;
+    }
+    printf("%s %d\n", str, hash);
+
+    return hash;
 }
