@@ -9,6 +9,7 @@
 char mirror[MIRROR_SIZE][MIRROR_SIZE];
 
 static int check_mirror(FILE *input);
+static int smudgecmp(const char *a, const char *b);
 
 int main(void)
 {
@@ -29,9 +30,9 @@ int main(void)
     return 0;
 }
 
-static int check_reflection_horizontal(int nlines, int skip_line);
+static int check_reflection_horizontal(int nlines, int skip_line, int smudges_allowed);
 static int transpose(int nlines);
-static int check_reflections(int nlines, int skip_score);
+static int check_reflections(int nlines, int skip_score, int smudges_allowed);
 static int check_with_smudge_correction(int nlines);
 
 static int check_mirror(FILE *input)
@@ -61,22 +62,14 @@ static int check_with_smudge_correction(int nlines)
     char original[MIRROR_SIZE][MIRROR_SIZE];
     memcpy(original, mirror, sizeof(mirror));
 
-    int ncols = strlen(mirror[0]);
-    int orig_reflection = check_reflections(nlines, 0);
+    int orig_reflection = check_reflections(nlines, 0, 0);
 
-    for (int r = 0; r < nlines; ++r)
+    memcpy(mirror, original, sizeof(mirror));
+
+    int new_reflection = check_reflections(nlines, orig_reflection, 1);
+    if (new_reflection != -1)
     {
-        for (int c = 0; c < ncols; ++c)
-        {
-            memcpy(mirror, original, sizeof(mirror));
-            mirror[r][c] = mirror[r][c] == '.' ? '#' : '.';
-
-            int new_reflection = check_reflections(nlines, orig_reflection);
-            if (new_reflection != -1)
-            {
-                return new_reflection;
-            }
-        }
+        return new_reflection;
     }
 
     assert(!"Not found!");
@@ -84,30 +77,30 @@ static int check_with_smudge_correction(int nlines)
 }
 
 
-static int check_reflections(int nlines, int skip_score)
+static int check_reflections(int nlines, int skip_score, int smudges_allowed)
 {
-    int row = check_reflection_horizontal(nlines, skip_score / 100); // zero is also fine as non-existing skip_line
+    int row = check_reflection_horizontal(nlines, skip_score / 100, smudges_allowed); // zero is also fine as non-existing skip_line
     if (row != -1) return row * 100;
 
     nlines = transpose(nlines);
 
-    int col = check_reflection_horizontal(nlines, skip_score % 100);
+    int col = check_reflection_horizontal(nlines, skip_score % 100, smudges_allowed);
 
     return col;
 }
 
 
-static int check_reflection_horizontal(int nlines, int skip_line)
+static int check_reflection_horizontal(int nlines, int skip_line, int smudges_allowed)
 {
     for (int split_row = 1; split_row < nlines; ++split_row)
     {
-        if (strcmp(mirror[split_row], mirror[split_row - 1]) == 0 && split_row != skip_line)
+        int nsmudges = smudgecmp(mirror[split_row], mirror[split_row - 1]);
+        if (split_row != skip_line)
         {
-            bool all_match = true;
-            for (int dist = 1; dist + split_row < nlines && split_row - dist - 1 >= 0 && all_match; ++dist)
-                all_match &= strcmp(mirror[split_row + dist], mirror[split_row - dist - 1]) == 0;
+            for (int dist = 1; dist + split_row < nlines && split_row - dist - 1 >= 0 && nsmudges <= smudges_allowed; ++dist)
+                nsmudges += smudgecmp(mirror[split_row + dist], mirror[split_row - dist - 1]);
 
-            if (all_match)
+            if (nsmudges <= smudges_allowed)
                 return split_row;
         }
     }
@@ -130,4 +123,16 @@ static int transpose(int nlines)
     }
 
     return ncols;
+}
+
+static int smudgecmp(const char *a, const char *b)
+{
+    int nsmudges = 0;
+    int i;
+    for (i = 0; a[i] != 0 && b[i] != 0; ++i)
+        nsmudges += a[i] != b[i];
+
+    assert(a[i] == 0 && b[i] == 0);
+
+    return nsmudges;
 }
