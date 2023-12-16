@@ -41,9 +41,31 @@ int main(void)
     }
     fclose(input);
 
-    int result = calculate_energized(0, 0, RIGHT);
+    int result = 0;
+    for (int row = 0; row < nrows; ++row)
+    {
+        int n_energized = calculate_energized(row, 0, RIGHT);
+        if (n_energized > result)
+            result = n_energized;
+
+        n_energized = calculate_energized(row, ncols - 1, LEFT);
+        if (n_energized > result)
+            result = n_energized;
+    }
+
+    for (int col = 0; col < ncols; ++col)
+    {
+        int n_energized = calculate_energized(0, col, DOWN);
+        if (n_energized > result)
+            result = n_energized;
+
+        n_energized = calculate_energized(nrows - 1, col, UP);
+        if (n_energized > result)
+            result = n_energized;
+    }
 
     // result p1: 7517
+    // result p2: 7741
     printf("Result: %d\n", result);
 
     return 0;
@@ -60,8 +82,12 @@ static int calculate_energized(int start_row, int start_col, enum direction star
         for (int c = 0; c < ncols; ++c)
         {
             n_energized += visited[r][c] != 0;
+            //printf("%c", visited[r][c] ? '#' : '.');
         }
+        //printf("\n");
     }
+
+    //printf("Result: %d\n", n_energized);
 
     return n_energized;
 }
