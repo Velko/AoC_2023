@@ -19,9 +19,20 @@ enum direction
 
 const char *dir_str = "^<v>";
 
+
+struct hist_item
+{
+    int row;
+    int col;
+    enum direction dir;
+};
+
+#define HISTORY_MAX     100
+
+
 static int move_row(int row, enum direction dir);
 static int move_col(int col, enum direction dir);
-static void walk_path(int start_row, int start_col, enum direction start_dir);
+static void walk_path(int start_row, int start_col, enum direction start_dir, struct hist_item *history, int nhist);
 static void turn_and_split(enum direction start_dir, char tile, enum direction *out_dir1, enum direction *out_dir2);
 
 int main(void)
@@ -37,7 +48,10 @@ int main(void)
         grid[nrows][ncols] = 0;
     }
 
-    walk_path(0, 0, RIGHT);
+
+    struct hist_item history[HISTORY_MAX];
+
+    walk_path(0, 0, RIGHT, history, 0);
 
     //for (int r = 0; r < nrows; ++r)
     //    printf("'%s'\n", grid[r]);
@@ -50,7 +64,7 @@ int main(void)
 }
 
 
-static void walk_path(int start_row, int start_col, enum direction start_dir)
+static void walk_path(int start_row, int start_col, enum direction start_dir, struct hist_item *history, int nhist)
 {
     printf("(%d, %d) ", start_row, start_col);
     if (start_row < 0 || start_row >= nrows || start_col < 0 || start_col >= ncols)
@@ -58,6 +72,21 @@ static void walk_path(int start_row, int start_col, enum direction start_dir)
         printf("X\n");
         return;
     }
+
+    for (int h = 0; h < nhist; ++h)
+    {
+        if (history[h].row == start_row && history[h].col == start_col && history[h].dir == start_dir)
+        {
+            printf("O\n");
+            return;
+        }
+    }
+
+    assert(nhist < HISTORY_MAX);
+    history[nhist].row = start_row;
+    history[nhist].col = start_col;
+    history[nhist].dir = start_dir;
+    ++nhist;
 
     enum direction dir1;
     enum direction dir2;
@@ -69,7 +98,7 @@ static void walk_path(int start_row, int start_col, enum direction start_dir)
         int col1 = move_col(start_col, dir1);
 
 
-        walk_path(row1, col1, dir1);
+        walk_path(row1, col1, dir1, history, nhist);
     }
 
     if (dir1 != dir2) // split
@@ -79,7 +108,10 @@ static void walk_path(int start_row, int start_col, enum direction start_dir)
 
         printf("(%d, %d) %c (2)\n", start_row, start_col, dir_str[dir2]);
 
-        walk_path(row2, col2, dir2);
+        struct hist_item split_history[HISTORY_MAX];
+        memcpy(split_history, history, nhist * sizeof(struct hist_item));
+
+        walk_path(row2, col2, dir2, split_history, nhist);
     }
 }
 
