@@ -25,11 +25,10 @@ static int move_row(int row, enum direction dir);
 static int move_col(int col, enum direction dir);
 static void walk_path(int start_row, int start_col, enum direction start_dir);
 static void turn_and_split(enum direction start_dir, char tile, enum direction *out_dir1, enum direction *out_dir2);
+static int calculate_energized(int start_row, int start_col, enum direction start_dir);
 
 int main(void)
 {
-    memset(visited, 0, sizeof(visited));
-
     FILE *input = fopen("input.txt", "r");
 
     nrows = 0;
@@ -42,24 +41,29 @@ int main(void)
     }
     fclose(input);
 
-    walk_path(0, 0, RIGHT);
+    int result = calculate_energized(0, 0, RIGHT);
 
-    // for (int r = 0; r < nrows; ++r)
-    //    printf("%s\n", energized[r]);
+    // result p1: 7517
+    printf("Result: %d\n", result);
 
-    int total = 0;
+    return 0;
+}
+
+static int calculate_energized(int start_row, int start_col, enum direction start_dir)
+{
+    memset(visited, 0, sizeof(visited));
+    walk_path(start_row, start_col, start_dir);
+
+    int n_energized = 0;
     for (int r = 0; r < nrows; ++r)
     {
         for (int c = 0; c < ncols; ++c)
         {
-            total += visited[r][c] != 0;
+            n_energized += visited[r][c] != 0;
         }
     }
 
-    // result p1: 7517
-    printf("Result: %d\n", total);
-
-    return 0;
+    return n_energized;
 }
 
 
