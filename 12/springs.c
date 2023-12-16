@@ -86,12 +86,12 @@ static long process_line(char *line)
 
     //printf("%ld\n", result);
 
-    // char *expected_p1_token = strtok_r(NULL, " \n", &outersp);
-    // if (expected_p1_token)
-    // {
-    //     int expected = atoi(expected_p1_token);
-    //     assert(expected == result);
-    // }
+    char *expected_p1_token = strtok_r(NULL, " \n", &outersp);
+    if (expected_p1_token)
+    {
+        long expected = atol(expected_p1_token);
+        assert(expected == result);
+    }
 
     //printf("Unk: %d, groups: %d tlen: %lu\n", num_unknown, num_groups, strlen(template));
     return result;
