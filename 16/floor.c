@@ -1,31 +1,33 @@
 #include <stdio.h>
+#include <string.h>
 
 
-#define BUFFER_SIZE     256
+#define BUFFER_SIZE     120
 
-static int parse_line(const char *line);
+char grid[BUFFER_SIZE][BUFFER_SIZE];
+int nrows;
+int ncols;
+
 
 int main(void)
 {
-    char line[BUFFER_SIZE];
     FILE *input = fopen("input.txt", "r");
 
-    int total = 0;
-
-    for (;;)
+    nrows = 0;
+    for (;;++nrows)
     {
-        if (fgets(line, BUFFER_SIZE, input) == NULL) break; 
-        total += parse_line(line);
+        if (fgets(grid[nrows], BUFFER_SIZE, input) == NULL) break; 
+        if (ncols == 0)
+            ncols = strlen(grid[nrows]) - 1;
+        grid[nrows][ncols] = 0;
     }
 
+    //for (int r = 0; r < nrows; ++r)
+    //    printf("'%s'\n", grid[r]);
+
+    int total = 0;
     printf("Result: %d\n", total);
 
     fclose(input);
-    return 0;
-}
-
-
-static int parse_line(const char *line)
-{
     return 0;
 }
