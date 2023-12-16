@@ -6,7 +6,7 @@
 #define BUFFER_SIZE     120
 
 char grid[BUFFER_SIZE][BUFFER_SIZE];
-char energized[BUFFER_SIZE][BUFFER_SIZE];
+char visited[BUFFER_SIZE][BUFFER_SIZE];
 int nrows;
 int ncols;
 
@@ -21,17 +21,6 @@ enum direction
 const char *dir_str = "^<v>";
 
 
-struct hist_item
-{
-    int row;
-    int col;
-    enum direction dir;
-};
-
-#define HISTORY_MAX     (BUFFER_SIZE * BUFFER_SIZE * 4)  // each cell entered from 4 directions
-struct hist_item history[HISTORY_MAX];
-int nhist;
-
 static int move_row(int row, enum direction dir);
 static int move_col(int col, enum direction dir);
 static void walk_path(int start_row, int start_col, enum direction start_dir);
@@ -39,7 +28,7 @@ static void turn_and_split(enum direction start_dir, char tile, enum direction *
 
 int main(void)
 {
-    memset(energized, '.', sizeof(energized));
+    memset(visited, 0, sizeof(visited));
 
     FILE *input = fopen("input.txt", "r");
 
@@ -50,11 +39,8 @@ int main(void)
         if (ncols == 0)
             ncols = strlen(grid[nrows]) - 1;
         grid[nrows][ncols] = 0;
-        energized[nrows][ncols] = 0;
     }
     fclose(input);
-
-    nhist = 0;
 
     walk_path(0, 0, RIGHT);
 
@@ -66,7 +52,7 @@ int main(void)
     {
         for (int c = 0; c < ncols; ++c)
         {
-            total += energized[r][c] == '#';
+            total += visited[r][c] != 0;
         }
     }
 
@@ -86,22 +72,10 @@ static void walk_path(int start_row, int start_col, enum direction start_dir)
         return;
     }
 
-    for (int h = 0; h < nhist; ++h)
-    {
-        if (history[h].row == start_row && history[h].col == start_col && history[h].dir == start_dir)
-        {
-            //printf("O\n");
-            return;
-        }
-    }
+    if (visited[start_row][start_col] & (1 << start_dir))
+        return;
 
-    assert(nhist < HISTORY_MAX);
-    history[nhist].row = start_row;
-    history[nhist].col = start_col;
-    history[nhist].dir = start_dir;
-    ++nhist;
-
-    energized[start_row][start_col] = '#';
+    visited[start_row][start_col] |= 1 << start_dir;
 
     enum direction dir1;
     enum direction dir2;
