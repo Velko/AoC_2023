@@ -13,14 +13,14 @@ unsigned glob_groups[MAX_GROUPS];
 long process_memo[TEMPLATE_LEN][MAX_GROUPS];
 
 static long process_line(char *line);
-static long process_record(const char template[], int start_idx, unsigned groups[]);
-static long process_record_memoized(const char template[], int start_idx, unsigned groups[]);
+static long process_record(const char template[], int start_idx, int group_idx);
+static long process_record_memoized(const char template[], int start_idx, int group_idx);
 static void reset_memo();
 static void self_tests();
 
 int main(void)
 {
-    //self_tests();
+    self_tests();
     //return 0;
 
     char line[BUFFER_SIZE];
@@ -82,7 +82,7 @@ static long process_line(char *line)
     // printf("\n");
 
     reset_memo();
-    long result = process_record_memoized(unfolded, 0, glob_groups);
+    long result = process_record_memoized(unfolded, 0, 0);
 
     //printf("%ld\n", result);
 
@@ -99,12 +99,11 @@ static long process_line(char *line)
 
 static bool fill_group(const char *template, int grp);
 
-static long process_record_memoized(const char template[], int start_idx, unsigned groups[])
+static long process_record_memoized(const char template[], int start_idx, int group_idx)
 {
-    int group_idx = groups - glob_groups;
     if (process_memo[start_idx][group_idx] == -1)
     {
-        long result = process_record(template, start_idx, groups);
+        long result = process_record(template, start_idx, group_idx);
         process_memo[start_idx][group_idx] = result;
         //printf("R: (%d, %d) -> %ld\n", start_idx, group_idx, result);
         return result;
@@ -113,9 +112,9 @@ static long process_record_memoized(const char template[], int start_idx, unsign
     return process_memo[start_idx][group_idx];
 }
 
-static long process_record(const char template[], int start_idx, unsigned groups[])
+static long process_record(const char template[], int start_idx, int group_idx)
 {
-    unsigned grp = *groups;
+    unsigned grp = glob_groups[group_idx];
 
     if (grp == 0)
     {
@@ -144,7 +143,7 @@ static long process_record(const char template[], int start_idx, unsigned groups
                 {
                     spacer = 1;
                 }
-                return sub_counts + process_record_memoized(template, start_idx + grp + spacer, groups + 1);
+                return sub_counts + process_record_memoized(template, start_idx + grp + spacer, group_idx + 1);
             }
             else
                 return sub_counts; // did not fit, stop trying
@@ -160,7 +159,7 @@ static long process_record(const char template[], int start_idx, unsigned groups
                     spacer = 1;
                 }
 
-                sub_counts += process_record_memoized(template, start_idx + grp + spacer, groups + 1);
+                sub_counts += process_record_memoized(template, start_idx + grp + spacer, group_idx + 1);
             }
             ++start_idx;
             break;
@@ -193,62 +192,92 @@ static void reset_memo()
     memset(process_memo, -1, sizeof(process_memo));
 }
 
+
+static void set_groups(unsigned *groups, ...)
+{
+    va_list args;
+    va_start(args, groups);
+
+    int count = 0;
+    for(;;++count)
+    {
+        groups[count] = va_arg(args, unsigned);
+        if (!groups[count]) break;
+    }
+
+    va_end(args);
+}
+
+
 static void self_tests()
 {
-    unsigned c1[] =  { 3, 0 };
+    set_groups(glob_groups, 3, 0);
+
     // not fit
-    int num = process_record("..#?", 0, c1);
+    reset_memo();
+    long num = process_record("..#?", 0, 0);
     assert(num == 0);
 
     // fit exactly
-    num = process_record("..##?", 0, c1);
+    reset_memo();
+    num = process_record("..##?", 0, 0);
     assert(num == 1);
 
     // fit with trailing good
-    num = process_record("..##?.", 0, c1);
+    reset_memo();
+    num = process_record("..##?.", 0, 0);
     assert(num == 1);
 
     // fit and unknown reminder
-    num = process_record("..##??", 0, c1);
+    reset_memo();
+    num = process_record("..##??", 0, 0);
     assert(num == 1);
 
     // unknown start trailing #, 1 option
-    num = process_record("..??##", 0, c1);
+    reset_memo();
+    num = process_record("..??##", 0, 0);
     assert(num == 1);
 
     // can't fit, result too long
-    num = process_record("..#??#", 0, c1);
+    reset_memo();
+    num = process_record("..#??#", 0, 0);
     assert(num == 0);
 
     // need separator
-    unsigned c2[] =  { 1, 1, 0 };
-    num = process_record("???", 0, c2);
+    reset_memo();
+    set_groups(glob_groups, 1, 1, 0);
+    num = process_record("???", 0, 0);
     assert(num == 1);
 
     // alternating
     // .#.###.#.######
-    unsigned c3[] =  { 1, 3, 1, 6, 0 };
-    num = process_record("?#?#?#?#?#?#?#?", 0, c3);
+    reset_memo();
+    set_groups(glob_groups, 1, 3, 1, 6, 0);
+    num = process_record("?#?#?#?#?#?#?#?", 0, 0);
     assert(num == 1);
 
     // ????.######..#####.
-    unsigned c4[]= {1,6,5,0};
-    num = process_record("????.######..#####.", 0, c4);
+    reset_memo();
+    set_groups(glob_groups, 1,6,5,0);
+    num = process_record("????.######..#####.", 0, 0);
     assert(num == 4);
 
     // ?###???????? 3,2,1
-    unsigned c5[]= {3,2,1,0};
-    num = process_record("?###????????", 0, c5);
+    reset_memo();
+    set_groups(glob_groups, 3,2,1,0);
+    num = process_record("?###????????", 0, 0);
     assert(num == 10);
 
     //??#??????#???.? 4,3 9
-    unsigned c6[]= {4,3,0};
-    num = process_record("??#??????#???.?", 0, c6);
+    reset_memo();
+    set_groups(glob_groups, 4,3,0);
+    num = process_record("??#??????#???.?", 0, 0);
     assert(num == 9);
 
-
     // ????????.?##?????????????????.?##?????????????????.?##?????????????????.?##?????????????????.?##???????? 3,1,1,4,1,1,3,1,1,4,1,1,3,1,1,4,1,1,3,1,1,4,1,1,3,1,1,4,1,1,
-    // unsigned c7[]= {3,1,1,4,1,1,3,1,1,4,1,1,3,1,1,4,1,1,3,1,1,4,1,1,3,1,1,4,1,1,0};
-    // num = process_record("????????.?##?????????????????.?##?????????????????.?##?????????????????.?##?????????????????.?##????????", 0, c7);
+    reset_memo();
+    set_groups(glob_groups, 3,1,1,4,1,1,3,1,1,4,1,1,3,1,1,4,1,1,3,1,1,4,1,1,3,1,1,4,1,1,0);
+    num = process_record("????????.?##?????????????????.?##?????????????????.?##?????????????????.?##?????????????????.?##????????", 0, 0);
 
+    assert(num == 70220760064);
 }
