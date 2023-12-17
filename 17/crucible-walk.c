@@ -61,7 +61,7 @@ int main(void)
         }
     }
 
-    struct visit_item pseudo_prev = { .heatloss = 0, .nstraight = 0, .dir_straight = NUM_DIRECTIONS };
+    struct visit_item pseudo_prev = { .heatloss = -(city[0][0] - '0'), .nstraight = 0, .dir_straight = NUM_DIRECTIONS };
 
     walk_path(0, 0, NUM_DIRECTIONS, &pseudo_prev);
 
@@ -75,21 +75,21 @@ static void walk_path(int row, int col, enum direction dir, struct visit_item *p
 {
     if (row < 0 || row >= nrows || col < 0 || col >= ncols)
     {
-        printf("(%d, %d) X\n", row, col);
+        //printf("(%d, %d) X\n", row, col);
         return;
     }
 
-    int curr_heatloss = city[row][col];
+    int curr_heatloss = city[row][col] - '0';
 
     if (visited[row][col].heatloss < prev->heatloss + curr_heatloss)
     {
-        printf("(%d, %d) H\n", row, col);
+        //printf("(%d, %d) H\n", row, col);
         return;
     }
 
     if (dir == prev->dir_straight && prev->nstraight >= 3)
     {
-        printf("(%d, %d) S\n", row, col);
+        //printf("(%d, %d) S\n", row, col);
         return;
     }
 
@@ -101,11 +101,11 @@ static void walk_path(int row, int col, enum direction dir, struct visit_item *p
     visited[row][col].dir_straight = dir;
     visited[row][col].heatloss = prev->heatloss + curr_heatloss;
 
-    print_visited();
+    //print_visited();
 
     for (enum direction new_dir = UP; new_dir < NUM_DIRECTIONS; ++new_dir)
     {
-        printf("(%d, %d) %c\n", row, col, dir_str[new_dir]);
+        //printf("(%d, %d) %c\n", row, col, dir_str[new_dir]);
         int new_row = move_row(row, new_dir);
         int new_col = move_col(col, new_dir);
         walk_path(new_row, new_col, new_dir, &visited[row][col]);
