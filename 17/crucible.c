@@ -71,6 +71,7 @@ int main(void)
     unsigned result = get_least_heatloss(4, 10);
 
     // result p1: 870
+    // result p1: 1063
     printf("Result: %d\n", result);
 
     return 0;
