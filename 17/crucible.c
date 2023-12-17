@@ -14,10 +14,9 @@ enum direction
     DOWN,
     RIGHT,
     NUM_DIRECTIONS, /* serves as total number and "non-visited" */
-    START
 };
 
-#define MAX_STEPS       3
+#define MAX_STEPS       10
 
 char city[BUFFER_SIZE][BUFFER_SIZE];
 unsigned visited[BUFFER_SIZE][BUFFER_SIZE][NUM_DIRECTIONS][MAX_STEPS];
@@ -50,7 +49,7 @@ static enum direction reverse(enum direction);
 static void pop_node(struct state *top);
 static void push_node(struct state *n);
 
-static unsigned get_least_heatloss();
+static unsigned get_least_heatloss(int min_steps, int max_steps);
 
 int main(void)
 {
@@ -68,23 +67,32 @@ int main(void)
     fclose(input);
 
 
-    unsigned result = get_least_heatloss();
+    //unsigned result = get_least_heatloss(1, 3);
+    unsigned result = get_least_heatloss(4, 10);
 
+    // result p1: 870
     printf("Result: %d\n", result);
 
     return 0;
 }
 
-static unsigned get_least_heatloss()
+static unsigned get_least_heatloss(int min_steps, int max_steps)
 {
     memset(visited, -1, sizeof(visited));
 
-    queue[0].row = 0;
-    queue[0].col = 0;
-    queue[0].dir = START;
-    queue[0].steps_straight = 0;
-    queue[0].heatloss = 0;
-    nqueue = 1;
+    struct state start =
+    {
+        .row = 0,
+        .col = 0,
+        .dir = DOWN,
+        .heatloss = 0,
+        .steps_straight = 0,
+    };
+    push_node(&start);
+
+    start.dir = RIGHT;
+    push_node(&start);
+
 
     while (nqueue > 0)
     {
@@ -92,7 +100,7 @@ static unsigned get_least_heatloss()
 
         pop_node(&node);
 
-        if (node.row == nrows-1 && node.col == ncols-1)
+        if (node.row == nrows-1 && node.col == ncols-1 && node.steps_straight >= min_steps)
             return node.heatloss;
 
         for (enum direction dir = UP; dir < NUM_DIRECTIONS; ++dir)
@@ -108,9 +116,12 @@ static unsigned get_least_heatloss()
             if (new_node.row < 0 || new_node.row >= nrows || new_node.col < 0 || new_node.col >= ncols)
                 continue;
 
+            if (dir != node.dir && node.steps_straight < min_steps)
+                continue;
+
             new_node.steps_straight = dir == node.dir ? node.steps_straight + 1 : 1;
 
-            if (new_node.steps_straight > 3) continue;
+            if (new_node.steps_straight > max_steps) continue;
 
             new_node.heatloss = node.heatloss + city[new_node.row][new_node.col] - '0';
 
@@ -124,7 +135,7 @@ static unsigned get_least_heatloss()
         }
     }
 
-    return false;
+    return -1;
 }
 
 static int move_row(int row, enum direction dir)
