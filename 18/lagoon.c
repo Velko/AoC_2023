@@ -6,29 +6,40 @@
 
 #define BUFFER_SIZE     256
 
-static int parse_line(const char *line);
+#define MAX_INSTRUCTIONS    700
+
+struct instr
+{
+    char dir;
+    int steps;
+};
+
+struct instr instructions[MAX_INSTRUCTIONS];
+int ninstructions;
+
+static void parse_line(const char *line);
 
 int main(void)
 {
     char line[BUFFER_SIZE];
     FILE *input = fopen("input.txt", "r");
 
-    int total = 0;
-
-    for (;;)
+    for (ninstructions = 0;; ++ninstructions)
     {
         if (fgets(line, BUFFER_SIZE, input) == NULL) break; 
-        total += parse_line(line);
+        parse_line(line);
     }
 
-    printf("Result: %d\n", total);
+    // int total = 0;
+    printf("Result: %d\n", ninstructions);
 
     fclose(input);
     return 0;
 }
 
 
-static int parse_line(const char *line)
+static void parse_line(const char *line)
 {
-    return 0;
+    sscanf(line, "%c %d", &instructions[ninstructions].dir, &instructions[ninstructions].steps);
+    //printf("%c, %d\n", instructions[ninstructions].dir, instructions[ninstructions].steps);
 }
