@@ -11,7 +11,7 @@
 struct instr
 {
     char dir;
-    int steps;
+    long steps;
 };
 
 struct instr instructions[MAX_INSTRUCTIONS];
@@ -21,10 +21,10 @@ int ninstructions;
 #define GROUND_SIZE     400
 
 char ground[GROUND_SIZE][GROUND_SIZE];
-int nrows;
-int ncols;
-int startrow;
-int startcol;
+long nrows;
+long ncols;
+long startrow;
+long startcol;
 
 #define TEMP_MARKER     '*'
 #define BORDER_MARKER   '#'
@@ -80,36 +80,42 @@ static void parse_line(char *line)
     instructions[ninstructions].steps = strtol(color, NULL, 16);
 
     //sscanf(line, "%c %d", &instructions[ninstructions].dir, &instructions[ninstructions].steps);
-    printf("%05x %c\n", instructions[ninstructions].steps, instructions[ninstructions].dir);
+    //printf("%05lx %c\n", instructions[ninstructions].steps, instructions[ninstructions].dir);
 }
 
 static void measure()
 {
-    int row_min = 100000;
-    int row_max = -100000;
+    long row_min = 100000;
+    long row_max = -100000;
 
-    int col_min = 100000;
-    int col_max = -100000;
+    long col_min = 100000;
+    long col_max = -100000;
 
-    int row = 0;
-    int col = 0;
+    long row = 0;
+    long col = 0;
+
+    // 0 means R, 1 means D, 2 means L, and 3 means U.
     for (int i = 0; i < ninstructions; ++i)
     {
         switch (instructions[i].dir)
         {
         case 'D':
+        case '1':
             row += instructions[i].steps;
             if (row > row_max) row_max = row;
             break;
         case 'U':
+        case '3':
             row -= instructions[i].steps;
             if (row < row_min) row_min = row;
             break;
         case 'R':
+        case '0':
             col += instructions[i].steps;
             if (col > col_max) col_max = col;
             break;
         case 'L':
+        case '2':
             col -= instructions[i].steps;
             if (col < col_min) col_min = col;
             break;
@@ -126,7 +132,7 @@ static void measure()
     startrow = -row_min + 1;
     startcol = -col_min + 1;
 
-    printf("(%d, %d) to (%d, %d) (%dx%d)\n", row_min, col_min, row_max, col_max, nrows, ncols);
+    printf("(%ld, %ld) to (%ld, %ld) (%ldx%ld)\n", row_min, col_min, row_max, col_max, nrows, ncols);
 }
 
 static void mark_border()
