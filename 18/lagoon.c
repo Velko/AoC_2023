@@ -30,7 +30,7 @@ int startcol;
 #define BORDER_MARKER   '#'
 #define EMPTY_MARKER    '.'
 
-static void parse_line(const char *line);
+static void parse_line(char *line);
 static void measure();
 static void prepare_ground();
 static void print_ground();
@@ -52,6 +52,7 @@ int main(void)
 
 
     measure();
+    return 0;
     prepare_ground();
     mark_border();
     flood_outside();
@@ -66,10 +67,20 @@ int main(void)
 }
 
 
-static void parse_line(const char *line)
+static void parse_line(char *line)
 {
-    sscanf(line, "%c %d", &instructions[ninstructions].dir, &instructions[ninstructions].steps);
-    //printf("%c, %d\n", instructions[ninstructions].dir, instructions[ninstructions].steps);
+    char *savep;
+
+    strtok_r(line, "#", &savep);
+    char *color = strtok_r(NULL, ")", &savep);
+
+    instructions[ninstructions].dir = color[5];
+
+    color[5] = 0;
+    instructions[ninstructions].steps = strtol(color, NULL, 16);
+
+    //sscanf(line, "%c %d", &instructions[ninstructions].dir, &instructions[ninstructions].steps);
+    printf("%05x %c\n", instructions[ninstructions].steps, instructions[ninstructions].dir);
 }
 
 static void measure()
