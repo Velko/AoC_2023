@@ -18,25 +18,20 @@ struct instr instructions[MAX_INSTRUCTIONS];
 int ninstructions;
 
 
-#define GROUND_SIZE     400
+struct vertice
+{
+    long row;
+    long col;
+};
 
-char ground[GROUND_SIZE][GROUND_SIZE];
-long nrows;
-long ncols;
-long startrow;
-long startcol;
+struct vertice vertices[MAX_INSTRUCTIONS];
+int nvertices;
 
-#define TEMP_MARKER     '*'
-#define BORDER_MARKER   '#'
-#define EMPTY_MARKER    '.'
 
 static void parse_line(char *line);
-static void measure();
-static void prepare_ground();
-static void print_ground();
-static void mark_border();
-static void flood_outside();
-static int count_border_and_inside();
+static long calculate_polygon_area();
+static long get_points_inside(long area, long nboundary);
+static long walk_around();
 
 int main(void)
 {
@@ -51,18 +46,15 @@ int main(void)
     fclose(input);
 
 
-    measure();
-    return 0;
-    prepare_ground();
-    mark_border();
-    flood_outside();
-    print_ground();
+    long perimeter = walk_around();
+    long area = calculate_polygon_area();
+    long points = get_points_inside(area, perimeter);
 
-
-    int result = count_border_and_inside();
+    long result = points + perimeter;
 
     // result p1: 40131
-    printf("Result: %d\n", result);
+    // result p2: 104454050898331
+    printf("Result: %ld\n", result);
     return 0;
 }
 
@@ -83,16 +75,15 @@ static void parse_line(char *line)
     //printf("%05lx %c\n", instructions[ninstructions].steps, instructions[ninstructions].dir);
 }
 
-static void measure()
+static long walk_around()
 {
-    long row_min = 100000;
-    long row_max = -100000;
-
-    long col_min = 100000;
-    long col_max = -100000;
-
+    long perimeter = 0;
     long row = 0;
     long col = 0;
+
+    vertices[0].row = row;
+    vertices[0].col = col;
+    nvertices = 1;
 
     // 0 means R, 1 means D, 2 means L, and 3 means U.
     for (int i = 0; i < ninstructions; ++i)
@@ -102,162 +93,66 @@ static void measure()
         case 'D':
         case '1':
             row += instructions[i].steps;
-            if (row > row_max) row_max = row;
             break;
         case 'U':
         case '3':
             row -= instructions[i].steps;
-            if (row < row_min) row_min = row;
             break;
         case 'R':
         case '0':
             col += instructions[i].steps;
-            if (col > col_max) col_max = col;
             break;
         case 'L':
         case '2':
             col -= instructions[i].steps;
-            if (col < col_min) col_min = col;
             break;
         default:
             printf("WTF\n");
             exit(1);
             break;
         }
+        vertices[nvertices].row = row;
+        vertices[nvertices].col = col;
+        ++nvertices;
+
+        perimeter += instructions[i].steps;
+
+        //printf("(%ld, %ld)\n", row, col);
     }
 
-    // add 1-char border around
-    nrows = row_max - row_min + 1 + 2;
-    ncols = col_max - col_min + 1 + 2;
-    startrow = -row_min + 1;
-    startcol = -col_min + 1;
-
-    printf("(%ld, %ld) to (%ld, %ld) (%ldx%ld)\n", row_min, col_min, row_max, col_max, nrows, ncols);
+    return perimeter;
 }
 
-static void mark_border()
+static long calculate_polygon_area()
 {
-    int row = startrow;
-    int col = startcol;
+    // https://en.m.wikipedia.org/wiki/Shoelace_formula#Triangle_formula
+    long area = 0;
 
-    ground[row][col] = BORDER_MARKER;
-
-    for (int i = 0; i < ninstructions; ++i)
+    for (int i = 1; i < nvertices; ++i)
     {
-        switch (instructions[i].dir)
-        {
-        case 'D':
-            for (int s = 0; s < instructions[i].steps; ++s)
-            {
-                ++row;
-                ground[row][col] = BORDER_MARKER;
-            }
-            break;
-        case 'U':
-            for (int s = 0; s < instructions[i].steps; ++s)
-            {
-                --row;
-                ground[row][col] = BORDER_MARKER;
-            }
-            break;
-        case 'R':
-            for (int s = 0; s < instructions[i].steps; ++s)
-            {
-                ++col;
-                ground[row][col] = BORDER_MARKER;
-            }
-            break;
-        case 'L':
-            for (int s = 0; s < instructions[i].steps; ++s)
-            {
-                --col;
-                ground[row][col] = BORDER_MARKER;
-            }
-            break;
-        default:
-            printf("WTF\n");
-            exit(1);
-            break;
-        }
+        area += vertices[i - 1].col * vertices[i].row - vertices[i].col * vertices[i - 1].row;
     }
+
+    return area / 2;
 }
 
-static void prepare_ground()
+static long get_points_inside(long area, long nboundary)
 {
-    memset(ground, TEMP_MARKER, sizeof(ground));
-    for (int row = 0; row < nrows; ++row)
-        ground[row][ncols] = 0;
-}
+    // https://en.wikipedia.org/wiki/Pick%27s_theorem
+    /*
+        The formula is:
+        A = i + b/2 -1
+        A - area
+        i - # of interior points
+        b - # of boundary points (whole integers that belong to perimeter)
 
-static void print_ground()
-{
-    for (int row = 0; row < nrows; ++row)
-        printf("%s\n", ground[row]);
-}
+        We need to obtain the i - # of interior points.
 
-static int count_border_and_inside()
-{
-    int count = 0;
-    for (int row = 0; row < nrows; ++row)
-    {
-        for (int col = 0; col < ncols; ++col)
-        {
-            if (ground[row][col] == BORDER_MARKER || ground[row][col] == TEMP_MARKER)
-                ++count;
-        }
-    }
+        i = A - b/2 + 1
 
-    return count;
-}
+        as the polygon consists only from integer number of steps and right angle
+        turns, all the points of perimeter belongs to it
+     */
 
-
-static bool mark_around(int row, int col);
-static void flood_outside()
-{
-    bool marked;
-    ground[0][0] = EMPTY_MARKER;
-
-    do
-    {
-        marked = false;
-        for (int row = 0; row < nrows; ++row)
-        {
-            for (int col = 0; col < ncols; ++col)
-            {
-                if (ground[row][col] == EMPTY_MARKER)
-                    marked |= mark_around(row, col);
-            }
-        }
-    } while (marked);
-}
-
-static bool mark_around(int row, int col)
-{
-    bool marked = false;
-
-    if (row > 0 && ground[row - 1][col] == TEMP_MARKER)
-    {
-        ground[row - 1][col] = EMPTY_MARKER;
-        marked = true;
-    }
-
-    if (col > 0 && ground[row][col - 1] == TEMP_MARKER)
-    {
-        ground[row][col - 1] = EMPTY_MARKER;
-        marked = true;
-    }
-
-    if (ground[row + 1][col] == TEMP_MARKER)
-    {
-        ground[row + 1][col] = EMPTY_MARKER;
-        marked = true;
-    }
-
-    if (ground[row][col + 1] == TEMP_MARKER)
-    {
-        ground[row][col + 1] = EMPTY_MARKER;
-        marked = true;
-    }
-
-    return marked;
+    return area - nboundary / 2 + 1;
 }
