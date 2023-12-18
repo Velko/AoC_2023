@@ -63,11 +63,12 @@ int main(void)
 
 
     measure();
-    return 0;
     prepare_ground();
     mark_border();
-    flood_outside();
     print_ground();
+    return 0;
+    flood_outside();
+    
 
 
     int result = count_border_and_inside();
@@ -167,8 +168,8 @@ static void measure()
     // startrow = -row_min + 1;
     // startcol = -col_min + 1;
 
-    nrows = nruler_r;
-    ncols = nruler_c;
+    nrows = nruler_r * 2;
+    ncols = nruler_c * 2;
     startrow = find_in_ruler(ruler_rows, nruler_r, 0);
     startcol = find_in_ruler(ruler_cols, nruler_c, 0);
 
@@ -193,7 +194,7 @@ static int find_in_ruler(long *ruler, int size, long value)
     long *p = bsearch(&value, ruler, size, sizeof(long), cmp_long);
     assert (p != NULL);
 
-    return p - ruler;
+    return (p - ruler) * 2 + 1;
 }
 
 static int cmp_long(const void *a, const void *b)
@@ -207,41 +208,66 @@ static int cmp_long(const void *a, const void *b)
 
 static void mark_border()
 {
-    int row = startrow;
-    int col = startcol;
+    assert(startrow >= 0 && startrow < nruler_r);
+    assert(startcol >= 0 && startcol < nruler_c);
 
-    ground[row][col] = BORDER_MARKER;
+    int row_scaled = startrow;
+    int col_scaled = startcol;
+
+    long row_real = ruler_rows[row_scaled];
+    long col_real = ruler_cols[col_scaled];
+
+    ground[startrow][startcol] = BORDER_MARKER;
+
+    int cto, rto;
+// 0 means R, 1 means D, 2 means L, and 3 means U.
 
     for (int i = 0; i < ninstructions; ++i)
     {
+        printf("%c %ld ", instructions[i].dir, instructions[i].steps);
+
+        row_scaled = find_in_ruler(ruler_rows, nruler_r, row_real);
+        col_scaled = find_in_ruler(ruler_cols, nruler_c, col_real);
         switch (instructions[i].dir)
         {
         case 'D':
-            for (int s = 0; s < instructions[i].steps; ++s)
+        case '1':
+            row_real += instructions[i].steps;
+            rto = find_in_ruler(ruler_rows, nruler_r, row_real); 
+            printf("%ld %d\n", row_real, rto);
+            for (int s = row_scaled; s <= rto; ++s)
             {
-                ++row;
-                ground[row][col] = BORDER_MARKER;
+                ground[s][col_scaled] = BORDER_MARKER;
             }
             break;
         case 'U':
-            for (int s = 0; s < instructions[i].steps; ++s)
+        case '3':
+            row_real -= instructions[i].steps;
+            rto = find_in_ruler(ruler_rows, nruler_r, row_real);
+            printf("%ld %d\n", row_real, rto);
+            for (int s = row_scaled; s >= rto; --s)
             {
-                --row;
-                ground[row][col] = BORDER_MARKER;
+                ground[s][col_scaled] = BORDER_MARKER;
             }
             break;
         case 'R':
-            for (int s = 0; s < instructions[i].steps; ++s)
+        case '0':
+            col_real += instructions[i].steps;
+            cto = find_in_ruler(ruler_cols, nruler_c, col_real); 
+            printf("%ld %d\n", col_real, cto);
+            for (int s = col_scaled; s <= cto; ++s)
             {
-                ++col;
-                ground[row][col] = BORDER_MARKER;
+                ground[row_scaled][s] = BORDER_MARKER;
             }
             break;
         case 'L':
-            for (int s = 0; s < instructions[i].steps; ++s)
+        case '2':
+            col_real -= instructions[i].steps;
+            cto = find_in_ruler(ruler_cols, nruler_c, col_real);
+            printf("%ld %d\n", col_real, cto);
+            for (int s = col_scaled; s >= cto; --s)
             {
-                --col;
-                ground[row][col] = BORDER_MARKER;
+                ground[row_scaled][s] = BORDER_MARKER;
             }
             break;
         default:
@@ -249,6 +275,8 @@ static void mark_border()
             exit(1);
             break;
         }
+
+        print_ground();
     }
 }
 
@@ -263,6 +291,7 @@ static void print_ground()
 {
     for (int row = 0; row < nrows; ++row)
         printf("%s\n", ground[row]);
+    printf("\n");
 }
 
 static int count_border_and_inside()
