@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stdbool.h>
+#include <limits.h>
 
 #define BUFFER_SIZE     256
 
@@ -32,12 +33,14 @@ long startcol;
 
 #define MAX_RULER       1000
 
-long ruler_cols[MAX_RULER];
-long ruler_rows[MAX_RULER];
-int nruler_r;
-int nruler_c;
+struct ruler
+{
+    long marks[MAX_RULER];
+    int nmarks;
+};
 
-
+struct ruler ruler_x;
+struct ruler ruler_y;
 
 static void parse_line(char *line);
 static void measure();
@@ -46,7 +49,13 @@ static void print_ground();
 static void mark_border();
 static void flood_outside();
 static int count_border_and_inside();
-static void add_to_ruler(long *ruler, int *size, long value);
+
+static int ruler_find_mark(struct ruler *ruler, long value);
+static void ruler_add_mark(struct ruler *ruler, long value);
+static void ruler_init(struct ruler *ruler);
+static void ruler_sort(struct ruler *ruler);
+static void ruler_print(struct ruler *ruler);
+
 
 
 int main(void)
@@ -81,36 +90,37 @@ int main(void)
 
 static void parse_line(char *line)
 {
-    char *savep;
+    // char *savep;
 
-    strtok_r(line, "#", &savep);
-    char *color = strtok_r(NULL, ")", &savep);
+    // strtok_r(line, "#", &savep);
+    // char *color = strtok_r(NULL, ")", &savep);
 
-    instructions[ninstructions].dir = color[5];
+    // instructions[ninstructions].dir = color[5];
 
-    color[5] = 0;
-    instructions[ninstructions].steps = strtol(color, NULL, 16);
+    // color[5] = 0;
+    // instructions[ninstructions].steps = strtol(color, NULL, 16);
 
-    //sscanf(line, "%c %d", &instructions[ninstructions].dir, &instructions[ninstructions].steps);
+    sscanf(line, "%c %ld", &instructions[ninstructions].dir, &instructions[ninstructions].steps);
     //printf("%05lx %c\n", instructions[ninstructions].steps, instructions[ninstructions].dir);
 }
 
 static int cmp_long(const void *a, const void *b);
-static int find_in_ruler(long *ruler, int size, long value);
+
 
 static void measure()
 {
-    long row_min = 100000;
-    long row_max = -100000;
+    ruler_init(&ruler_x);
+    ruler_init(&ruler_y);
 
-    long col_min = 100000;
-    long col_max = -100000;
+    ruler_add_mark(&ruler_x, LONG_MIN);
+    ruler_add_mark(&ruler_y, LONG_MIN);
 
-    long row = 0;
-    long col = 0;
+    long x = 0;
+    long y = 0;
 
-    add_to_ruler(ruler_rows, &nruler_r, row);
-    add_to_ruler(ruler_cols, &nruler_c, col);
+
+    ruler_add_mark(&ruler_x, x);
+    ruler_add_mark(&ruler_y, y);
 
     // 0 means R, 1 means D, 2 means L, and 3 means U.
     for (int i = 0; i < ninstructions; ++i)
@@ -119,27 +129,23 @@ static void measure()
         {
         case 'D':
         case '1':
-            row += instructions[i].steps;
-            if (row > row_max) row_max = row;
-            add_to_ruler(ruler_rows, &nruler_r, row);
+            y += instructions[i].steps;
+            ruler_add_mark(&ruler_y, y);
             break;
         case 'U':
         case '3':
-            row -= instructions[i].steps;
-            if (row < row_min) row_min = row;
-            add_to_ruler(ruler_rows, &nruler_r, row);
+            y -= instructions[i].steps;
+            ruler_add_mark(&ruler_y, y);
             break;
         case 'R':
         case '0':
-            col += instructions[i].steps;
-            if (col > col_max) col_max = col;
-            add_to_ruler(ruler_cols, &nruler_c, col);
+            x += instructions[i].steps;
+            ruler_add_mark(&ruler_x, x);
             break;
         case 'L':
         case '2':
-            col -= instructions[i].steps;
-            if (col < col_min) col_min = col;
-            add_to_ruler(ruler_cols, &nruler_c, col);
+            x -= instructions[i].steps;
+            ruler_add_mark(&ruler_x, x);
             break;
         default:
             printf("WTF\n");
@@ -148,53 +154,52 @@ static void measure()
         }
     }
 
-    qsort(ruler_rows, nruler_r, sizeof(long), cmp_long);
-    qsort(ruler_cols, nruler_c, sizeof(long), cmp_long);
+    ruler_sort(&ruler_x);
+    ruler_sort(&ruler_y);
 
     printf("Rows: ");
-    for (int i = 0; i < nruler_r; ++i)
-        printf("%ld, ", ruler_rows[i]);
-    printf("\n");
+    ruler_print(&ruler_y);
 
     printf("Cols: ");
-    for (int i = 0; i < nruler_c; ++i)
-        printf("%ld, ", ruler_cols[i]);
-    printf("\n");
-
-
-    // add 1-char border around
-    // nrows = row_max - row_min + 1 + 2;
-    // ncols = col_max - col_min + 1 + 2;
-    // startrow = -row_min + 1;
-    // startcol = -col_min + 1;
-
-    nrows = nruler_r * 2;
-    ncols = nruler_c * 2;
-    startrow = find_in_ruler(ruler_rows, nruler_r, 0);
-    startcol = find_in_ruler(ruler_cols, nruler_c, 0);
-
-    printf("(%ld, %ld) to (%ld, %ld) (%ldx%ld)\n", row_min, col_min, row_max, col_max, nrows, ncols);
+    ruler_print(&ruler_x);
 }
 
-static void add_to_ruler(long *ruler, int *size, long value)
+static void ruler_init(struct ruler *ruler)
 {
-    assert(*size < MAX_RULER);
+    ruler->nmarks = 0;
+}
 
-    for (int i = 0; i < *size; ++i)
+static void ruler_add_mark(struct ruler *ruler, long value)
+{
+    assert(ruler->nmarks < MAX_RULER);
+
+    for (int i = 0; i < ruler->nmarks; ++i)
     {
-        if (ruler[i] == value) return;
+        if (ruler->marks[i] == value) return;
     }
 
-    ruler[*size] = value;
-    ++(*size);
+    ruler->marks[ruler->nmarks] = value;
+    ++ruler->nmarks;
 }
 
-static int find_in_ruler(long *ruler, int size, long value)
+static void ruler_sort(struct ruler *ruler)
 {
-    long *p = bsearch(&value, ruler, size, sizeof(long), cmp_long);
+    qsort(ruler->marks, ruler->nmarks, sizeof(long), cmp_long);
+}
+
+static int ruler_find_mark(struct ruler *ruler, long value)
+{
+    long *p = bsearch(&value, ruler->marks, ruler->nmarks, sizeof(long), cmp_long);
     assert (p != NULL);
 
-    return (p - ruler) * 2 + 1;
+    return p - ruler->marks;
+}
+
+static void ruler_print(struct ruler *ruler)
+{
+    for (int i = 0; i < ruler->nmarks; ++i)
+        printf("%ld, ", ruler->marks[i]);
+    printf("\n");
 }
 
 static int cmp_long(const void *a, const void *b)
@@ -208,66 +213,63 @@ static int cmp_long(const void *a, const void *b)
 
 static void mark_border()
 {
-    assert(startrow >= 0 && startrow < nruler_r);
-    assert(startcol >= 0 && startcol < nruler_c);
+    long x = 0;
+    long y = 0;
 
-    int row_scaled = startrow;
-    int col_scaled = startcol;
+    int row = ruler_find_mark(&ruler_y, y);
+    int col = ruler_find_mark(&ruler_x, x);
 
-    long row_real = ruler_rows[row_scaled];
-    long col_real = ruler_cols[col_scaled];
+    ground[row][col] = BORDER_MARKER;
 
-    ground[startrow][startcol] = BORDER_MARKER;
-
-    int cto, rto;
-// 0 means R, 1 means D, 2 means L, and 3 means U.
-
+    int new_row, new_col;
+    // 0 means R, 1 means D, 2 means L, and 3 means U.
     for (int i = 0; i < ninstructions; ++i)
     {
         printf("%c %ld ", instructions[i].dir, instructions[i].steps);
 
-        row_scaled = find_in_ruler(ruler_rows, nruler_r, row_real);
-        col_scaled = find_in_ruler(ruler_cols, nruler_c, col_real);
+        int row = ruler_find_mark(&ruler_y, y);
+        int col = ruler_find_mark(&ruler_x, x);
+
         switch (instructions[i].dir)
         {
         case 'D':
         case '1':
-            row_real += instructions[i].steps;
-            rto = find_in_ruler(ruler_rows, nruler_r, row_real); 
-            printf("%ld %d\n", row_real, rto);
-            for (int s = row_scaled; s <= rto; ++s)
+            y += instructions[i].steps;
+            new_row = ruler_find_mark(&ruler_y, y); 
+            printf("%ld %d\n", y, new_row);
+            for (int s = row; s <= new_row; ++s)
             {
-                ground[s][col_scaled] = BORDER_MARKER;
+                ground[s][col] = BORDER_MARKER;
             }
             break;
         case 'U':
         case '3':
-            row_real -= instructions[i].steps;
-            rto = find_in_ruler(ruler_rows, nruler_r, row_real);
-            printf("%ld %d\n", row_real, rto);
-            for (int s = row_scaled; s >= rto; --s)
+            y -= instructions[i].steps;
+            new_row = ruler_find_mark(&ruler_y, y); 
+            printf("%ld %d\n", y, new_row);
+            for (int s = row; s >= new_row; --s)
             {
-                ground[s][col_scaled] = BORDER_MARKER;
+                ground[s][col] = BORDER_MARKER;
             }
             break;
         case 'R':
         case '0':
-            col_real += instructions[i].steps;
-            cto = find_in_ruler(ruler_cols, nruler_c, col_real); 
-            printf("%ld %d\n", col_real, cto);
-            for (int s = col_scaled; s <= cto; ++s)
+            x += instructions[i].steps;
+            new_col = ruler_find_mark(&ruler_x, x); 
+            printf("%ld %d\n", x, new_col);
+            for (int s = col; s <= new_col; ++s)
             {
-                ground[row_scaled][s] = BORDER_MARKER;
+                ground[row][s] = BORDER_MARKER;
             }
             break;
         case 'L':
         case '2':
-            col_real -= instructions[i].steps;
-            cto = find_in_ruler(ruler_cols, nruler_c, col_real);
-            printf("%ld %d\n", col_real, cto);
-            for (int s = col_scaled; s >= cto; --s)
+            x -= instructions[i].steps;
+            new_col = ruler_find_mark(&ruler_x, x); 
+            printf("%ld %d\n", x, new_col);
+            for (int s = col; s >= new_col; --s)
             {
-                ground[row_scaled][s] = BORDER_MARKER;
+                ground[row][s] = BORDER_MARKER;
             }
             break;
         default:
@@ -283,13 +285,13 @@ static void mark_border()
 static void prepare_ground()
 {
     memset(ground, TEMP_MARKER, sizeof(ground));
-    for (int row = 0; row < nrows; ++row)
-        ground[row][ncols] = 0;
+    for (int row = 0; row <= ruler_y.nmarks; ++row)
+        ground[row][ruler_x.nmarks + 1] = 0;
 }
 
 static void print_ground()
 {
-    for (int row = 0; row < nrows; ++row)
+    for (int row = 0; row <= ruler_y.nmarks; ++row)
         printf("%s\n", ground[row]);
     printf("\n");
 }
