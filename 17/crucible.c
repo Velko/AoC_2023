@@ -33,13 +33,7 @@ struct state
     int steps_straight;
 };
 
-#define MAX_QUEUE       (BUFFER_SIZE * BUFFER_SIZE)
-
-struct state queue[MAX_QUEUE];
 int nqueue;
-
-
-
 
 const char *dir_str = "^<v>.S";
 
@@ -48,6 +42,7 @@ static int move_col(int col, enum direction dir);
 static enum direction reverse(enum direction);
 static void pop_node(struct state *top);
 static void push_node(struct state *n);
+static void setup_queue();
 
 static unsigned get_least_heatloss(int min_steps, int max_steps);
 
@@ -80,6 +75,7 @@ int main(void)
 static unsigned get_least_heatloss(int min_steps, int max_steps)
 {
     memset(visited, -1, sizeof(visited));
+    setup_queue();
 
     struct state start =
     {
@@ -182,36 +178,56 @@ static enum direction reverse(enum direction dir)
     }
 }
 
+/* Implement priority queue as buckets of ring buffers */
 
-/* Probably not the best priority queue implementation but 
-   should work.
- */
+#define MAX_ITEMS_BUCKET             2048 /* determined experimentally */
+#define MAX_BUCKETS                  (BUFFER_SIZE * BUFFER_SIZE)
+
+struct state_bucket
+{
+    int read_idx;
+    int write_idx;
+    struct state items[MAX_ITEMS_BUCKET];
+};
+
+struct state_bucket queue[MAX_BUCKETS];
+
+static void setup_queue()
+{
+    memset(queue, 0, sizeof(queue));
+    nqueue = 0;
+}
+
 static void pop_node(struct state *top)
 {
-    assert(nqueue > 0);
-    memcpy(top, queue, sizeof(struct state));
+    int i;
+    for (i = 0; i < MAX_BUCKETS; ++i)
+    {
+        if (queue[i].write_idx > queue[i].read_idx)
+        {
+            int idx = queue[i].read_idx % MAX_ITEMS_BUCKET;
+            *top = queue[i].items[idx];
+            ++queue[i].read_idx;
+            --nqueue;
+            return;
+        }
+    }
 
-    --nqueue;
-
-    memmove(queue, queue + 1, sizeof(struct state) * nqueue);
+    assert(i < MAX_BUCKETS);
 }
 
-static int compare_states(const void *a, const void *b);
 static void push_node(struct state *n)
 {
-    assert(nqueue < MAX_QUEUE);
+    assert(n->heatloss < MAX_BUCKETS);
 
-    memcpy(queue + nqueue, n, sizeof(struct state));
+    struct state_bucket *bucket = queue + n->heatloss;
+
+    // check of not full
+    assert(bucket->write_idx - bucket->read_idx < MAX_ITEMS_BUCKET);
+
+    int idx = bucket->write_idx % MAX_ITEMS_BUCKET;
+
+    bucket->items[idx] = *n;
+    ++bucket->write_idx;
     ++nqueue;
-
-    qsort(queue, nqueue, sizeof(struct state), compare_states);
-}
-
-
-static int compare_states(const void *a, const void *b)
-{
-    const struct state *sa = (const struct state *)a;
-    const struct state *sb = (const struct state *)b;
-
-    return (int)sa->heatloss - (int)sb->heatloss;
 }
