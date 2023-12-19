@@ -10,7 +10,7 @@
 #define MAX_WORKFLOWS   520
 #define MAX_STEPS         8
 #define WF_NAME_LEN       4
-
+#define NPARAMS           4
 
 
 struct wf_step
@@ -34,12 +34,26 @@ int nworkflows = 0;
 const char *val_names = "xmas";
 struct part
 {
-    int values[4];
+    int values[NPARAMS];
+};
+
+struct range
+{
+    int start;
+    int limit;
+};
+
+
+struct ranges
+{
+    struct range r[NPARAMS];
 };
 
 
 static void parse_workflow(char *line);
 static int process_part(char *line);
+
+static long check_split_ranges();
 
 int main(void)
 {
@@ -58,7 +72,6 @@ int main(void)
         parse_workflow(line);
     }
 
-
     int total = 0;
     for (;;)
     {
@@ -68,7 +81,11 @@ int main(void)
     }
 
     // result p1: 331208
-    printf("Result: %d\n", total);
+    printf("Result p1: %d\n", total);
+
+    // result p2: 121464316215623
+    long result2 = check_split_ranges();
+    printf("Result p2: %ld\n", result2);
 
     fclose(input);
     return 0;
@@ -231,4 +248,74 @@ static const char *check_step_condition(struct wf_step *step, int *part_values, 
         break;
     }
     return NULL;
+}
+
+
+static long check_split_workflow(const char *wfname, struct ranges *primary);
+
+static long check_split_ranges()
+{
+    struct ranges primary;
+    for (int r = 0; r < NPARAMS; ++r)
+    {
+        primary.r[r].start = 1;
+        primary.r[r].limit = 4001; // limit is exclusive
+    }
+
+    return check_split_workflow("in", &primary);
+}
+
+static long check_split_workflow(const char *wfname, struct ranges *primary)
+{
+    if (wfname[0] == 'R')
+        return 0;
+    
+    if (wfname[0] == 'A')
+    {
+        long num_ranges = 1;
+        //printf("Accepting: \n");
+        for (int p = 0; p < NPARAMS; ++p)
+        {
+            //printf("%c  [%d, %d)\n", val_names[p], primary->r[p].start, primary->r[p].limit);
+            num_ranges *= primary->r[p].limit - primary->r[p].start;
+        }
+
+        //printf("Total: %ld ranges\n\n", num_ranges);
+        return num_ranges;
+    }
+
+    struct workflow *flow = lookup_workflow(wfname);
+
+    long total_ranges = 0;
+
+    for (int s = 0; ; ++s)
+    {
+        if (flow->steps[s].op == '!')
+        {
+            return total_ranges + check_split_workflow(flow->steps[s].target, primary);
+        }
+
+        struct ranges branch;
+        memcpy(&branch, primary, sizeof(struct ranges));
+
+        int pidx = param_from_char(flow->steps[s].param);
+
+        switch (flow->steps[s].op)
+        {
+        case '<':
+            branch.r[pidx].limit = flow->steps[s].value;
+            total_ranges += check_split_workflow(flow->steps[s].target, &branch);
+            primary->r[pidx].start = flow->steps[s].value;
+            break;
+        case '>':
+            branch.r[pidx].start = flow->steps[s].value + 1;
+            total_ranges += check_split_workflow(flow->steps[s].target, &branch);
+            primary->r[pidx].limit = flow->steps[s].value + 1;
+            break;
+        default:
+            printf("WTF\n");
+            exit(1);
+            break;
+        }
+    }
 }
