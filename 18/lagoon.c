@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stdbool.h>
-#include <limits.h>
 
 #define BUFFER_SIZE     256
 
@@ -19,19 +18,15 @@ struct instr instructions[MAX_INSTRUCTIONS];
 int ninstructions;
 
 
-#define GROUND_SIZE     400
+#define GROUND_SIZE     600
 
 char ground[GROUND_SIZE][GROUND_SIZE];
-long nrows;
-long ncols;
-long startrow;
-long startcol;
 
 #define TEMP_MARKER     '*'
 #define BORDER_MARKER   '#'
 #define EMPTY_MARKER    '.'
 
-#define MAX_RULER       1000
+#define MAX_RULER       600
 
 struct ruler
 {
@@ -48,15 +43,14 @@ static void prepare_ground();
 static void print_ground();
 static void mark_border();
 static void flood_outside();
-static int count_border_and_inside();
+static long count_border_and_inside();
 
 static int ruler_find_mark(struct ruler *ruler, long value);
 static void ruler_add_mark(struct ruler *ruler, long value);
 static void ruler_init(struct ruler *ruler);
 static void ruler_sort(struct ruler *ruler);
 static void ruler_print(struct ruler *ruler);
-
-
+static long ruler_mark_increment(struct ruler *ruler, int mark);
 
 int main(void)
 {
@@ -74,33 +68,30 @@ int main(void)
     measure();
     prepare_ground();
     mark_border();
-    print_ground();
-    return 0;
     flood_outside();
-    
-
-
-    int result = count_border_and_inside();
+    print_ground();
+    long result = count_border_and_inside();
 
     // result p1: 40131
-    printf("Result: %d\n", result);
+    // result p2: 104454050898331
+    printf("Result: %ld\n", result);
     return 0;
 }
 
 
 static void parse_line(char *line)
 {
-    // char *savep;
+    char *savep;
 
-    // strtok_r(line, "#", &savep);
-    // char *color = strtok_r(NULL, ")", &savep);
+    strtok_r(line, "#", &savep);
+    char *color = strtok_r(NULL, ")", &savep);
 
-    // instructions[ninstructions].dir = color[5];
+    instructions[ninstructions].dir = color[5];
 
-    // color[5] = 0;
-    // instructions[ninstructions].steps = strtol(color, NULL, 16);
+    color[5] = 0;
+    instructions[ninstructions].steps = strtol(color, NULL, 16);
 
-    sscanf(line, "%c %ld", &instructions[ninstructions].dir, &instructions[ninstructions].steps);
+    //sscanf(line, "%c %ld", &instructions[ninstructions].dir, &instructions[ninstructions].steps);
     //printf("%05lx %c\n", instructions[ninstructions].steps, instructions[ninstructions].dir);
 }
 
@@ -111,9 +102,6 @@ static void measure()
 {
     ruler_init(&ruler_x);
     ruler_init(&ruler_y);
-
-    ruler_add_mark(&ruler_x, LONG_MIN);
-    ruler_add_mark(&ruler_y, LONG_MIN);
 
     long x = 0;
     long y = 0;
@@ -131,21 +119,25 @@ static void measure()
         case '1':
             y += instructions[i].steps;
             ruler_add_mark(&ruler_y, y);
+            ruler_add_mark(&ruler_y, y - 1);
             break;
         case 'U':
         case '3':
             y -= instructions[i].steps;
             ruler_add_mark(&ruler_y, y);
+            ruler_add_mark(&ruler_y, y - 1);
             break;
         case 'R':
         case '0':
             x += instructions[i].steps;
             ruler_add_mark(&ruler_x, x);
+            ruler_add_mark(&ruler_x, x - 1);
             break;
         case 'L':
         case '2':
             x -= instructions[i].steps;
             ruler_add_mark(&ruler_x, x);
+            ruler_add_mark(&ruler_x, x - 1);
             break;
         default:
             printf("WTF\n");
@@ -157,11 +149,11 @@ static void measure()
     ruler_sort(&ruler_x);
     ruler_sort(&ruler_y);
 
-    printf("Rows: ");
-    ruler_print(&ruler_y);
+    //printf("Rows: %d\n", ruler_y.nmarks);
+    // ruler_print(&ruler_y);
 
-    printf("Cols: ");
-    ruler_print(&ruler_x);
+    //printf("Cols: %d\n", ruler_x.nmarks);
+    // ruler_print(&ruler_x);
 }
 
 static void ruler_init(struct ruler *ruler)
@@ -207,7 +199,23 @@ static int cmp_long(const void *a, const void *b)
     long *la = (long *)a;
     long *lb = (long *)b;
 
-    return *la - *lb;
+    /* input is long but function has to return int,
+       simple subtraction loses bits somewhere
+     */
+    long diff = *la - *lb;
+    if (diff < 0)
+        return -1;
+    else if (diff > 0)
+        return 1;
+    else
+        return 0;
+}
+
+static long ruler_mark_increment(struct ruler *ruler, int mark)
+{
+    assert(mark > 0 && mark < ruler->nmarks);
+
+    return ruler->marks[mark] - ruler->marks[mark - 1];
 }
 
 
@@ -225,7 +233,7 @@ static void mark_border()
     // 0 means R, 1 means D, 2 means L, and 3 means U.
     for (int i = 0; i < ninstructions; ++i)
     {
-        printf("%c %ld ", instructions[i].dir, instructions[i].steps);
+        //printf("%c %ld -> ", instructions[i].dir, instructions[i].steps);
 
         int row = ruler_find_mark(&ruler_y, y);
         int col = ruler_find_mark(&ruler_x, x);
@@ -236,7 +244,7 @@ static void mark_border()
         case '1':
             y += instructions[i].steps;
             new_row = ruler_find_mark(&ruler_y, y); 
-            printf("%ld %d\n", y, new_row);
+            //printf("%ld %d\n", y, new_row);
             for (int s = row; s <= new_row; ++s)
             {
                 ground[s][col] = BORDER_MARKER;
@@ -246,7 +254,7 @@ static void mark_border()
         case '3':
             y -= instructions[i].steps;
             new_row = ruler_find_mark(&ruler_y, y); 
-            printf("%ld %d\n", y, new_row);
+            //printf("%ld %d\n", y, new_row);
             for (int s = row; s >= new_row; --s)
             {
                 ground[s][col] = BORDER_MARKER;
@@ -256,7 +264,7 @@ static void mark_border()
         case '0':
             x += instructions[i].steps;
             new_col = ruler_find_mark(&ruler_x, x); 
-            printf("%ld %d\n", x, new_col);
+            //printf("%ld %d\n", x, new_col);
             for (int s = col; s <= new_col; ++s)
             {
                 ground[row][s] = BORDER_MARKER;
@@ -266,7 +274,7 @@ static void mark_border()
         case '2':
             x -= instructions[i].steps;
             new_col = ruler_find_mark(&ruler_x, x); 
-            printf("%ld %d\n", x, new_col);
+            //printf("%ld %d\n", x, new_col);
             for (int s = col; s >= new_col; --s)
             {
                 ground[row][s] = BORDER_MARKER;
@@ -278,7 +286,7 @@ static void mark_border()
             break;
         }
 
-        print_ground();
+        //print_ground();
     }
 }
 
@@ -296,15 +304,18 @@ static void print_ground()
     printf("\n");
 }
 
-static int count_border_and_inside()
+static long count_border_and_inside()
 {
-    int count = 0;
-    for (int row = 0; row < nrows; ++row)
+    long count = 0;
+    for (int row = 0; row < ruler_y.nmarks; ++row)
     {
-        for (int col = 0; col < ncols; ++col)
+        for (int col = 0; col < ruler_x.nmarks; ++col)
         {
             if (ground[row][col] == BORDER_MARKER || ground[row][col] == TEMP_MARKER)
-                ++count;
+            {
+                //printf("(%d, %d) -> %ldx%ld\n", row, col, ruler_mark_increment(&ruler_y, row), ruler_mark_increment(&ruler_x, col));
+                count += ruler_mark_increment(&ruler_y, row) * ruler_mark_increment(&ruler_x, col);
+            }
         }
     }
 
@@ -321,9 +332,9 @@ static void flood_outside()
     do
     {
         marked = false;
-        for (int row = 0; row < nrows; ++row)
+        for (int row = 0; row <= ruler_y.nmarks; ++row)
         {
-            for (int col = 0; col < ncols; ++col)
+            for (int col = 0; col <= ruler_x.nmarks; ++col)
             {
                 if (ground[row][col] == EMPTY_MARKER)
                     marked |= mark_around(row, col);
