@@ -27,14 +27,20 @@ struct workflow workflows[MAX_WORKFLOWS];
 int nworkflows = 0;
 
 
+const char *val_names = "xmas";
+struct part
+{
+    int values[4];
+};
+
+
 static void parse_workflow(char *line);
+static int process_part(char *line);
 
 int main(void)
 {
     char line[BUFFER_SIZE];
     FILE *input = fopen("input.txt", "r");
-
-    int total = 0;
 
     for (;;)
     {
@@ -48,7 +54,17 @@ int main(void)
         parse_workflow(line);
     }
 
-    //printf("Result: %d\n", total);
+
+    int total = 0;
+    for (;;)
+    {
+        if (fgets(line, BUFFER_SIZE, input) == NULL)
+            break;
+        total += process_part(line);
+    }
+
+    // result p1: 331208
+    printf("Result: %d\n", total);
 
     fclose(input);
     return 0;
@@ -92,7 +108,6 @@ static void parse_workflow(char *line)
             assert(strlen(condition) < WF_NAME_LEN);
             strcpy(workflows[nworkflows].steps[nsteps].target, condition);
             workflows[nworkflows].steps[nsteps].op = '!';
-            printf("%s\n", condition);
         }
 
         ++nsteps;
@@ -100,4 +115,98 @@ static void parse_workflow(char *line)
     }
 
     ++nworkflows;
+}
+
+
+static int param_from_char(char p);
+static int run_wf(struct part *part);
+static int process_part(char *line)
+{
+    struct part part = { .values = {0, 0, 0, 0 } };
+
+    //{x=903,m=143,a=1348,s=25}
+    ++line;
+    line[strlen(line)-2] = 0; //strip } and \n
+
+
+    char *sp;
+    char *spec = strtok_r(line, ",", &sp);
+    while (spec)
+    {
+        int pidx = param_from_char(spec[0]);
+
+        assert(spec[1] == '=');
+
+        part.values[pidx] = atoi(spec + 2);
+
+        spec = strtok_r(NULL, ",", &sp);
+    }
+
+    return run_wf(&part);
+}
+
+static int param_from_char(char p)
+{
+    char *pp = strchr(val_names, p);
+    assert(pp != NULL);
+    return pp - val_names;
+}
+
+
+static const char *process_steps(struct workflow *flow, struct part *part);
+static int run_wf(struct part *part)
+{
+    const char *wfn = "in";
+
+    while (strcmp(wfn, "A") != 0 && strcmp(wfn, "R") != 0)
+    {
+        //printf("%s -> ", wfn);
+        struct workflow *flow = NULL;
+        for (int w = 0; w < nworkflows; ++w)
+        {
+            if (strcmp(workflows[w].name, wfn) == 0)
+            {
+                flow = workflows + w;
+                break;
+            }
+        }
+
+        assert (flow != NULL);
+        wfn = process_steps(flow, part);
+    }
+
+    //printf("%s\n", wfn);
+
+    if (strcmp(wfn, "A") == 0)
+    {
+        //printf("%d\n", part->values[0] + part->values[1] + part->values[2] + part->values[3]);
+        return part->values[0] + part->values[1] + part->values[2] + part->values[3];
+    }
+
+    return 0;
+}
+
+static const char *process_steps(struct workflow *flow, struct part *part)
+{
+    for (int s = 0; ; ++s)
+    {
+        int pidx = param_from_char(flow->steps[s].param);
+        switch (flow->steps[s].op)
+        {
+        case '<':
+            if (part->values[pidx] < flow->steps[s].value)
+                return flow->steps[s].target;
+            break;
+        case '>':
+            if (part->values[pidx] > flow->steps[s].value)
+                return flow->steps[s].target;
+            break;
+        case '!':
+            return flow->steps[s].target;
+        default:
+            printf("WTF\n");
+            exit(1);
+            break;
+        }
+    }
 }
