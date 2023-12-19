@@ -12,15 +12,19 @@
 #define WF_NAME_LEN       4
 
 
+
+struct wf_step
+{
+    char param;
+    char op;
+    int value;
+    char target[WF_NAME_LEN];
+};
+
 struct workflow
 {
     char name[WF_NAME_LEN];
-    struct {
-        char param;
-        char op;
-        int value;
-        char target[WF_NAME_LEN];
-    } steps[MAX_STEPS];
+    struct wf_step steps[MAX_STEPS];
 };
 
 struct workflow workflows[MAX_WORKFLOWS];
@@ -119,7 +123,7 @@ static void parse_workflow(char *line)
 
 
 static int param_from_char(char p);
-static int run_wf(struct part *part);
+static bool run_wf(struct part *part);
 static int process_part(char *line)
 {
     struct part part = { .values = {0, 0, 0, 0 } };
@@ -142,7 +146,15 @@ static int process_part(char *line)
         spec = strtok_r(NULL, ",", &sp);
     }
 
-    return run_wf(&part);
+    bool accepted = run_wf(&part);
+
+    if (accepted)
+    {
+        //printf("%d\n", part->values[0] + part->values[1] + part->values[2] + part->values[3]);
+        return part.values[0] + part.values[1] + part.values[2] + part.values[3];
+    }
+
+    return 0;
 }
 
 static int param_from_char(char p)
@@ -153,60 +165,70 @@ static int param_from_char(char p)
 }
 
 
-static const char *process_steps(struct workflow *flow, struct part *part);
-static int run_wf(struct part *part)
+static struct workflow *lookup_workflow(const char *wfn)
+{
+    struct workflow *flow = NULL;
+    for (int w = 0; w < nworkflows; ++w)
+    {
+        if (strcmp(workflows[w].name, wfn) == 0)
+        {
+            flow = workflows + w;
+            break;
+        }
+    }
+
+    assert (flow != NULL);
+    return flow;
+}
+
+static const char *process_steps(struct wf_step *steps, int *part_values);
+static bool run_wf(struct part *part)
 {
     const char *wfn = "in";
 
-    while (strcmp(wfn, "A") != 0 && strcmp(wfn, "R") != 0)
+    while (wfn[0] != 'A' && wfn[0] != 'R')
     {
         //printf("%s -> ", wfn);
-        struct workflow *flow = NULL;
-        for (int w = 0; w < nworkflows; ++w)
-        {
-            if (strcmp(workflows[w].name, wfn) == 0)
-            {
-                flow = workflows + w;
-                break;
-            }
-        }
+        struct workflow *flow = lookup_workflow(wfn);
 
-        assert (flow != NULL);
-        wfn = process_steps(flow, part);
+        wfn = process_steps(flow->steps, part->values);
     }
 
     //printf("%s\n", wfn);
 
-    if (strcmp(wfn, "A") == 0)
-    {
-        //printf("%d\n", part->values[0] + part->values[1] + part->values[2] + part->values[3]);
-        return part->values[0] + part->values[1] + part->values[2] + part->values[3];
-    }
-
-    return 0;
+    return wfn[0] == 'A';
 }
 
-static const char *process_steps(struct workflow *flow, struct part *part)
+static const char *check_step_condition(struct wf_step *step, int *part_values, int pidx);
+static const char *process_steps(struct wf_step *steps, int *part_values)
 {
     for (int s = 0; ; ++s)
     {
-        int pidx = param_from_char(flow->steps[s].param);
-        switch (flow->steps[s].op)
-        {
-        case '<':
-            if (part->values[pidx] < flow->steps[s].value)
-                return flow->steps[s].target;
-            break;
-        case '>':
-            if (part->values[pidx] > flow->steps[s].value)
-                return flow->steps[s].target;
-            break;
-        case '!':
-            return flow->steps[s].target;
-        default:
-            printf("WTF\n");
-            exit(1);
-            break;
-        }
+        int pidx = param_from_char(steps[s].param);
+        const char *new_wf = check_step_condition(steps + s, part_values, pidx);
+        if (new_wf)
+            return new_wf;
     }
+}
+
+static const char *check_step_condition(struct wf_step *step, int *part_values, int pidx)
+{
+    switch (step->op)
+    {
+    case '<':
+        if (part_values[pidx] < step->value)
+            return step->target;
+        break;
+    case '>':
+        if (part_values[pidx] > step->value)
+            return step->target;
+        break;
+    case '!':
+        return step->target;
+    default:
+        printf("WTF\n");
+        exit(1);
+        break;
+    }
+    return NULL;
 }
