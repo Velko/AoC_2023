@@ -13,7 +13,6 @@
 // broadcaster
 #define NAME_LEN        12
 
-char device_index[MAX_DEVICES][NAME_LEN];
 int ndevices;
 
 enum module_type
@@ -28,13 +27,11 @@ enum module_type
 struct module
 {
     enum module_type type;
+    char name[NAME_LEN];
     uint8_t id;
     uint8_t outputs[MAX_OUTPUTS];
     //uint64_t input_mask;
 };
-
-int nmodules;
-
 
 struct module modules[MAX_DEVICES];
 
@@ -47,8 +44,8 @@ int main(void)
     char line[BUFFER_SIZE];
     FILE *input = fopen("input.txt", "r");
 
-    memset(device_index, 0, sizeof(device_index));
-    strcpy(device_index[0], "broadcaster"); // reserve #0 for brodcaster
+    memset(modules, 0, sizeof(modules));
+    strcpy(modules[0].name, "broadcaster"); // reserve #0 for brodcaster
     ndevices = 1;
 
     for (;;)
@@ -57,8 +54,6 @@ int main(void)
         parse_name(line);
     }
 
-    nmodules = 0;
-    memset(modules, 0, sizeof(modules));
     fseek(input, 0, SEEK_SET);
 
     for (;;)
@@ -92,7 +87,7 @@ static void parse_name(char *line)
 
     assert(ndevices < MAX_DEVICES);
     assert(strlen(line) < NAME_LEN);
-    strcpy(device_index[ndevices], line);
+    strcpy(modules[ndevices].name, line);
     ++ndevices; 
 }
 
@@ -102,30 +97,33 @@ static void parse_module(char *line)
     char *sp1;
     char *name = strtok_r(line, " ->", &sp1);
 
-    assert(nmodules < MAX_DEVICES);
-
+    enum module_type mtype;
     switch (name[0])
     {
     case '%':
-        modules[nmodules].type = FLIP_FLOP;
+        mtype = FLIP_FLOP;
         ++name;
         break;
     case '&':
-        modules[nmodules].type = CONJUNCTION;
+        mtype = CONJUNCTION;
         ++name;
         break;
     default:
-        modules[nmodules].type = BROADCAST;
+        mtype = BROADCAST;
         break;
     }
 
-    modules[nmodules].id = dev_id_from_name(name);
+    int dev = dev_id_from_name(name);
+    assert (dev >=0 && dev < ndevices);
+
+    modules[dev].id = dev; //TODO: do I need it?
+    modules[dev].type = mtype;
 
     int nout = 0;
     char *output = strtok_r(NULL, "->, \n", &sp1);
     while (output)
     {
-        modules[nmodules].outputs[nout] = dev_id_from_name(output);
+        modules[dev].outputs[nout] = dev_id_from_name(output);
         ++nout;
         output = strtok_r(NULL, ", \n", &sp1);
     }
@@ -136,11 +134,9 @@ static int dev_id_from_name(const char *name)
     int i;
     for (i = 0; i < ndevices; ++i)
     {
-        if (strcmp(name, device_index[i]) == 0)
+        if (strcmp(name, modules[i].name) == 0)
             return i;
     }
 
-    printf("%s\n", name);
-//    assert(i < ndevices);
     return -1;
 }
