@@ -73,6 +73,7 @@ static void parse_name(char *line);
 static void parse_module(char *line);
 static int dev_id_from_name(const char *name);
 static void wire_inputs();
+static void print_dependencies();
 static void send_pulse(enum level lvl, int source, int target);
 static void push_button();
 static void handle_rx(struct module *m, struct pulse *p);
@@ -108,6 +109,8 @@ int main(void)
     fclose(input);
 
     wire_inputs();
+
+    print_dependencies();
 
     q_read_idx = q_write_idx = 0;
 
@@ -208,14 +211,28 @@ static int dev_id_from_name(const char *name)
 
 static void wire_inputs()
 {
-    for (int m = 0; m < ndevices; ++m)
+    for (int m = 1; m < ndevices; ++m)
     {
         for (int o = 0; modules[m].outputs[o]; ++o)
         {
             int target = modules[m].outputs[o];
-            if (modules[target].type == CONJUNCTION)
-                modules[target].input_mask |= 1 << m;
+            modules[target].input_mask |= 1ULL << m;
         }
+    }
+}
+
+static void print_dependencies()
+{
+    for (int m = 1; m < ndevices; ++m)
+    {
+        printf("%d %s (", modules[m].type, modules[m].name);
+        for (int i = 1; i < ndevices; ++i)
+        {
+            if (modules[m].input_mask & (1ULL << i))
+                printf("%s, ", modules[i].name);
+        }
+
+        printf(")\n");
     }
 }
 
@@ -284,9 +301,9 @@ static void handle_conjunction(struct module *m, struct pulse *p)
     assert(p->source != -1 && p->source < MAX_DEVICES);
 
     if (p->level == LOW)
-        m->state &= ~(1 << p->source);
+        m->state &= ~(1ULL << p->source);
     else
-        m->state |= 1 << p->source;
+        m->state |= 1ULL << p->source;
 
     p->level = m->state == m->input_mask ? LOW : HIGH;
 
