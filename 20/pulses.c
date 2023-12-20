@@ -55,6 +55,9 @@ struct pulse
     int target;
 };
 
+#define BROADCASTER_ID      1
+#define RX_ID               (BROADCASTER_ID + 1)
+
 #define MAX_QUEUE   MAX_DEVICES
 
 struct pulse queue[MAX_DEVICES];
@@ -81,12 +84,12 @@ int main(void)
     FILE *input = fopen("input.txt", "r");
 
     memset(modules, 0, sizeof(modules));
-    strcpy(modules[0].name, "broadcaster"); // reserve #0 for brodcaster
-    strcpy(modules[1].name, "rx");
-    ndevices = 2;
+    strcpy(modules[BROADCASTER_ID].name, "broadcaster"); // reserve #0 for brodcaster
+    strcpy(modules[RX_ID].name, "rx");
+    ndevices = 3;
 
-    modules[1].type = RX;
-    modules[1].handle_pulse = handle_rx;
+    modules[RX_ID].type = RX;
+    modules[RX_ID].handle_pulse = handle_rx;
 
     for (;;)
     {
@@ -218,7 +221,7 @@ static void wire_inputs()
 
 static void push_button()
 {
-    send_pulse(LOW, -1, 0); // no source to broadcaster
+    send_pulse(LOW, -1, BROADCASTER_ID); // no source to broadcaster
 
     while (q_read_idx < q_write_idx)
     {
