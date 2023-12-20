@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <limits.h>
 
 #define BUFFER_SIZE     256
 
@@ -20,6 +21,7 @@ enum module_type
     BROADCAST,
     FLIP_FLOP,
     CONJUNCTION,
+    RX,
 };
 
 #define MAX_OUTPUTS     8
@@ -62,6 +64,7 @@ int q_write_idx;
 
 int low_pulses_sent;
 int high_pulses_sent;
+long button_presses;
 
 static void parse_name(char *line);
 static void parse_module(char *line);
@@ -69,6 +72,8 @@ static int dev_id_from_name(const char *name);
 static void wire_inputs();
 static void send_pulse(enum level lvl, int source, int target);
 static void push_button();
+static void handle_rx(struct module *m, struct pulse *p);
+
 
 int main(void)
 {
@@ -77,7 +82,11 @@ int main(void)
 
     memset(modules, 0, sizeof(modules));
     strcpy(modules[0].name, "broadcaster"); // reserve #0 for brodcaster
-    ndevices = 1;
+    strcpy(modules[1].name, "rx");
+    ndevices = 2;
+
+    modules[1].type = RX;
+    modules[1].handle_pulse = handle_rx;
 
     for (;;)
     {
@@ -101,7 +110,7 @@ int main(void)
 
     low_pulses_sent = high_pulses_sent = 0;
 
-    for (int i = 0; i < 1000; ++i)
+    for (button_presses = 1; button_presses < LONG_MAX; ++button_presses)
         push_button();
 
     printf("Low: %d, high: %d\n", low_pulses_sent, high_pulses_sent);
@@ -259,6 +268,7 @@ static void handle_flipflop(struct module *m, struct pulse *p)
     assert(m->type == FLIP_FLOP);
     if (p->level == LOW)
     {
+        printf("%s  @ %ld\n", m->name, button_presses);
         m->state ^= 1;
         p->level = m->state ? HIGH : LOW;
         handle_broadcast(m, p);
@@ -278,4 +288,14 @@ static void handle_conjunction(struct module *m, struct pulse *p)
     p->level = m->state == m->input_mask ? LOW : HIGH;
 
     handle_broadcast(m, p);
+}
+
+static void handle_rx(struct module *m, struct pulse *p)
+{
+    assert(m->type == RX);
+    if (p->level == LOW)
+    {
+        printf("RX reached: %ld\n", button_presses);
+        exit(0);
+    }
 }
