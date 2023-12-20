@@ -30,7 +30,7 @@ struct module
     char name[NAME_LEN];
     uint8_t id;
     uint8_t outputs[MAX_OUTPUTS];
-    //uint64_t input_mask;
+    uint64_t input_mask;
 };
 
 struct module modules[MAX_DEVICES];
@@ -38,6 +38,7 @@ struct module modules[MAX_DEVICES];
 static void parse_name(char *line);
 static void parse_module(char *line);
 static int dev_id_from_name(const char *name);
+static void wire_inputs();
 
 int main(void)
 {
@@ -63,6 +64,8 @@ int main(void)
     }
 
     fclose(input);
+
+    wire_inputs();
 
     int total = 0;
     printf("Result: %d\n", total);
@@ -139,4 +142,17 @@ static int dev_id_from_name(const char *name)
     }
 
     return -1;
+}
+
+static void wire_inputs()
+{
+    for (int m = 0; m < ndevices; ++m)
+    {
+        for (int o = 0; modules[m].outputs[o]; ++o)
+        {
+            int target = modules[m].outputs[o];
+            if (modules[target].type == CONJUNCTION)
+                modules[target].input_mask |= 1 << m;
+        }
+    }
 }
