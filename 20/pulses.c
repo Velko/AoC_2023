@@ -59,6 +59,10 @@ struct pulse queue[MAX_DEVICES];
 int q_read_idx;
 int q_write_idx;
 
+
+int low_pulses_sent;
+int high_pulses_sent;
+
 static void parse_name(char *line);
 static void parse_module(char *line);
 static int dev_id_from_name(const char *name);
@@ -95,10 +99,17 @@ int main(void)
 
     q_read_idx = q_write_idx = 0;
 
-    push_button();
+    low_pulses_sent = high_pulses_sent = 0;
 
-    int total = 0;
-    printf("Result: %d\n", total);
+    for (int i = 0; i < 1000; ++i)
+        push_button();
+
+    printf("Low: %d, high: %d\n", low_pulses_sent, high_pulses_sent);
+
+    long result = (long)low_pulses_sent * high_pulses_sent;
+
+    // result p1: 814934624
+    printf("Result: %ld\n", result);
 
     return 0;
 }
@@ -219,11 +230,16 @@ static void send_pulse(enum level lvl, int source, int target)
 {
     assert(q_write_idx - q_read_idx < MAX_QUEUE);
 
-    char *src = source != -1 ? modules[source].name : "(none)";
-    char *tgt = target != -1 ? modules[target].name : "(none)";
-    char *l = lvl ? "high" : "low";
+    // char *src = source != -1 ? modules[source].name : "(none)";
+    // char *tgt = target != -1 ? modules[target].name : "(none)";
+    // char *l = lvl ? "high" : "low";
 
-    printf("%s -%s-> %s\n", src, l, tgt);
+    // printf("%s -%s-> %s\n", src, l, tgt);
+
+    if (lvl == LOW)
+        ++low_pulses_sent;
+    else
+        ++high_pulses_sent;
 
     int idx = q_write_idx % MAX_QUEUE;
     queue[idx].level = lvl;
