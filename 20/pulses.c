@@ -4,7 +4,8 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <limits.h>
+
+//#define DEBUG_PRINT
 
 #define BUFFER_SIZE     256
 
@@ -24,8 +25,6 @@ enum module_type
     RX,
 };
 
-const char *type_c = "*%&=";
-
 #define MAX_OUTPUTS     8
 
 
@@ -39,10 +38,10 @@ struct module
     uint64_t input_mask;
     void (*handle_pulse)(struct module *m, struct pulse *p);
     uint64_t state;
+    long last_low_sent_at;
 };
 
 struct module modules[MAX_DEVICES];
-
 
 enum level
 {
@@ -62,10 +61,10 @@ struct pulse
 
 #define MAX_QUEUE   MAX_DEVICES
 
+/* in-line ring buffer */
 struct pulse queue[MAX_DEVICES];
 int q_read_idx;
 int q_write_idx;
-
 
 int low_pulses_sent;
 int high_pulses_sent;
@@ -73,15 +72,24 @@ long button_presses;
 
 static void parse_name(char *line);
 static void parse_module(char *line);
+static void push_button();
 static int dev_id_from_name(const char *name);
 static void wire_inputs();
-static void print_dependencies();
 static void send_pulse(enum level lvl, int source, int target);
-static void push_button();
+static void handle_broadcast(struct module *m, struct pulse *p);
+static void handle_flipflop(struct module *m, struct pulse *p);
+static void handle_conjunction(struct module *m, struct pulse *p);
 static void handle_rx(struct module *m, struct pulse *p);
+static long get_loop_lcm(int mod_id, int depth);
+static long lcm(long a, long b);
+
+#ifdef DEBUG_PRINT
+const char *type_c = "*%&=";
+
+static void print_dependencies();
 static void rename_module(const char *from, const char *to);
 static void rename_modules();
-static long lcm(long a, long b);
+#endif
 
 int main(void)
 {
@@ -114,29 +122,32 @@ int main(void)
 
     wire_inputs();
 
+    #ifdef DEBUG_PRINT
     rename_modules();
-
-    //print_dependencies();
+    print_dependencies();
+    #endif
 
     q_read_idx = q_write_idx = 0;
 
+    // push the button 1000 times to get result for p1
     low_pulses_sent = high_pulses_sent = 0;
-
-    // for (button_presses = 1; button_presses < LONG_MAX; ++button_presses)
-    //     push_button();
+    for (button_presses = 1; button_presses <= 1000; ++button_presses)
+        push_button();
 
     // printf("Low: %d, high: %d\n", low_pulses_sent, high_pulses_sent);
-
-    // long result = (long)low_pulses_sent * high_pulses_sent;
-
-    long result = 4079;
-    result = lcm(result, 3761);
-    result = lcm(result, 3797);
-    result = lcm(result, 3919);
-
+    long result1 = (long)low_pulses_sent * high_pulses_sent;
     // result p1: 814934624
+    printf("Result p1: %ld\n", result1);
+
+    // Keep pushing until 2^12. The "loops" for current input
+    // contain 12 flip-flops each, there can not be more than
+    // 2^12 states
+    for (; button_presses <= 4096; ++button_presses)
+        push_button();
+
+    long result2 = get_loop_lcm(RX_ID, 3);
     // result p2: 228282646835717
-    printf("Result: %ld\n", result);
+    printf("Result p2: %ld\n", result2);
 
     return 0;
 }
@@ -161,11 +172,6 @@ static void parse_name(char *line)
     strcpy(modules[ndevices].name, line);
     ++ndevices; 
 }
-
-static void handle_broadcast(struct module *m, struct pulse *p);
-static void handle_flipflop(struct module *m, struct pulse *p);
-static void handle_conjunction(struct module *m, struct pulse *p);
-
 
 static void parse_module(char *line)
 {
@@ -209,10 +215,11 @@ static void parse_module(char *line)
     }
 }
 
-
+#ifdef DEBUG_PRINT
 
 static void rename_modules()
 {
+    // NOTE: these probably work only on my input
     rename_module("nr", "r_mux"); 
     rename_module("fk", "r_a");
     rename_module("lh", "r_b");
@@ -270,15 +277,7 @@ static void rename_modules()
     rename_module("zc", "d_10");
     rename_module("rp", "d_11");
     rename_module("bc", "d_12");
-
-    // rename_module("", "d_");
-    // rename_module("", "d_");
-    // rename_module("", "d_");
-    // rename_module("", "d_");
-
 }
-
-
 
 static void rename_module(const char *from, const char *to)
 {
@@ -287,6 +286,23 @@ static void rename_module(const char *from, const char *to)
 
     strcpy(modules[id].name, to);
 }
+
+static void print_dependencies()
+{
+    for (int m = 1; m < ndevices; ++m)
+    {
+        printf("%c %s (", type_c[modules[m].type], modules[m].name);
+        for (int i = 1; i < ndevices; ++i)
+        {
+            if (modules[m].input_mask & (1ULL << i))
+                printf("%s, ", modules[i].name);
+        }
+
+        printf(")\n");
+    }
+}
+
+#endif
 
 static int dev_id_from_name(const char *name)
 {
@@ -309,21 +325,6 @@ static void wire_inputs()
             int target = modules[m].outputs[o];
             modules[target].input_mask |= 1ULL << m;
         }
-    }
-}
-
-static void print_dependencies()
-{
-    for (int m = 1; m < ndevices; ++m)
-    {
-        printf("%c %s (", type_c[modules[m].type], modules[m].name);
-        for (int i = 1; i < ndevices; ++i)
-        {
-            if (modules[m].input_mask & (1ULL << i))
-                printf("%s, ", modules[i].name);
-        }
-
-        printf(")\n");
     }
 }
 
@@ -368,22 +369,14 @@ static void send_pulse(enum level lvl, int source, int target)
     ++q_write_idx;
 }
 
-long prev_steps = 0;
-
 static void handle_broadcast(struct module *m, struct pulse *p)
 {
     for (int o = 0; m->outputs[o]; ++o)
         send_pulse(p->level, m->id, m->outputs[o]);
-
-    if (p->level == LOW)
+     if (p->level == LOW)
     {
-        if (strcmp(m->name, "d_mux") == 0)
-        {
-            printf("%s  @ %ld     +%ld\n", m->name, button_presses, button_presses - prev_steps);
-            prev_steps = button_presses;
-        }
+        m->last_low_sent_at = button_presses;
     }
-
 }
 
 static void handle_flipflop(struct module *m, struct pulse *p)
@@ -420,6 +413,24 @@ static void handle_rx(struct module *m, struct pulse *p)
         printf("RX reached: %ld\n", button_presses);
         exit(0);
     }
+}
+
+static long get_loop_lcm(int mod_id, int depth)
+{
+    if (depth > 0)
+    {
+        long res_lcm = 1;
+        for (int i = 1; i < ndevices; ++i)
+        {
+            if (modules[mod_id].input_mask & (1ULL << i))
+            {
+                long dep_res = get_loop_lcm(i, depth - 1);
+                res_lcm = lcm(res_lcm, dep_res);
+            }
+        }
+        return res_lcm;
+    }
+    return modules[mod_id].last_low_sent_at;
 }
 
 static long gcd(long a, long b);
