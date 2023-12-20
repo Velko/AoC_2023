@@ -81,7 +81,7 @@ static void push_button();
 static void handle_rx(struct module *m, struct pulse *p);
 static void rename_module(const char *from, const char *to);
 static void rename_modules();
-
+static long lcm(long a, long b);
 
 int main(void)
 {
@@ -116,20 +116,26 @@ int main(void)
 
     rename_modules();
 
-    print_dependencies();
+    //print_dependencies();
 
     q_read_idx = q_write_idx = 0;
 
     low_pulses_sent = high_pulses_sent = 0;
 
-    for (button_presses = 1; button_presses < LONG_MAX; ++button_presses)
-        push_button();
+    // for (button_presses = 1; button_presses < LONG_MAX; ++button_presses)
+    //     push_button();
 
-    printf("Low: %d, high: %d\n", low_pulses_sent, high_pulses_sent);
+    // printf("Low: %d, high: %d\n", low_pulses_sent, high_pulses_sent);
 
-    long result = (long)low_pulses_sent * high_pulses_sent;
+    // long result = (long)low_pulses_sent * high_pulses_sent;
+
+    long result = 4079;
+    result = lcm(result, 3761);
+    result = lcm(result, 3797);
+    result = lcm(result, 3919);
 
     // result p1: 814934624
+    // result p2: 228282646835717
     printf("Result: %ld\n", result);
 
     return 0;
@@ -371,7 +377,7 @@ static void handle_broadcast(struct module *m, struct pulse *p)
 
     if (p->level == LOW)
     {
-        if (strcmp(m->name, "vm") == 0)
+        if (strcmp(m->name, "d_mux") == 0)
         {
             printf("%s  @ %ld     +%ld\n", m->name, button_presses, button_presses - prev_steps);
             prev_steps = button_presses;
@@ -414,4 +420,25 @@ static void handle_rx(struct module *m, struct pulse *p)
         printf("RX reached: %ld\n", button_presses);
         exit(0);
     }
+}
+
+static long gcd(long a, long b);
+static long lcm(long a, long b)
+{
+    return (a / gcd(a, b)) * b;
+}
+
+static long gcd(long a, long b)
+{
+    while (a > 0 && b > 0)
+    {
+        if (a > b)
+            a = a % b;
+        else
+            b = b % a;
+    }
+
+    if (a == 0)
+        return b;
+    return a;
 }
