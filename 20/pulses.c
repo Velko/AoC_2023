@@ -24,21 +24,47 @@ enum module_type
 
 #define MAX_OUTPUTS     8
 
+
+struct pulse;
 struct module
 {
     enum module_type type;
     char name[NAME_LEN];
-    uint8_t id;
-    uint8_t outputs[MAX_OUTPUTS];
+    int id;
+    int outputs[MAX_OUTPUTS];
     uint64_t input_mask;
+    void (*handle_pulse)(struct module *m, struct pulse *p);
+    uint64_t state;
 };
 
 struct module modules[MAX_DEVICES];
+
+
+enum level
+{
+    LOW = 0,
+    HIGH = 1,
+};
+
+struct pulse
+{
+    enum level level;
+    int source;
+    int target;
+};
+
+#define MAX_QUEUE   MAX_DEVICES
+
+struct pulse queue[MAX_DEVICES];
+int q_read_idx;
+int q_write_idx;
 
 static void parse_name(char *line);
 static void parse_module(char *line);
 static int dev_id_from_name(const char *name);
 static void wire_inputs();
+static void send_pulse(enum level lvl, int source, int target);
+static void push_button();
 
 int main(void)
 {
@@ -67,6 +93,10 @@ int main(void)
 
     wire_inputs();
 
+    q_read_idx = q_write_idx = 0;
+
+    push_button();
+
     int total = 0;
     printf("Result: %d\n", total);
 
@@ -94,6 +124,10 @@ static void parse_name(char *line)
     ++ndevices; 
 }
 
+static void handle_broadcast(struct module *m, struct pulse *p);
+static void handle_flipflop(struct module *m, struct pulse *p);
+static void handle_conjunction(struct module *m, struct pulse *p);
+
 
 static void parse_module(char *line)
 {
@@ -101,26 +135,31 @@ static void parse_module(char *line)
     char *name = strtok_r(line, " ->", &sp1);
 
     enum module_type mtype;
+    void (*handler)(struct module *m, struct pulse *p);
     switch (name[0])
     {
     case '%':
         mtype = FLIP_FLOP;
+        handler = handle_flipflop;
         ++name;
         break;
     case '&':
         mtype = CONJUNCTION;
+        handler = handle_conjunction;
         ++name;
         break;
     default:
         mtype = BROADCAST;
+        handler = handle_broadcast;
         break;
     }
 
     int dev = dev_id_from_name(name);
     assert (dev >=0 && dev < ndevices);
 
-    modules[dev].id = dev; //TODO: do I need it?
+    modules[dev].id = dev;
     modules[dev].type = mtype;
+    modules[dev].handle_pulse = handler;
 
     int nout = 0;
     char *output = strtok_r(NULL, "->, \n", &sp1);
@@ -155,4 +194,72 @@ static void wire_inputs()
                 modules[target].input_mask |= 1 << m;
         }
     }
+}
+
+static void push_button()
+{
+    send_pulse(LOW, -1, 0); // no source to broadcaster
+
+    while (q_read_idx < q_write_idx)
+    {
+        struct pulse *p = &queue[q_read_idx % MAX_QUEUE];
+        if (p->target != -1)
+        {
+            assert(p->target < ndevices);
+            
+            struct module *m = &modules[p->target];
+
+            m->handle_pulse(m, p);
+        }
+        ++q_read_idx;
+    }
+}
+
+static void send_pulse(enum level lvl, int source, int target)
+{
+    assert(q_write_idx - q_read_idx < MAX_QUEUE);
+
+    char *src = source != -1 ? modules[source].name : "(none)";
+    char *tgt = target != -1 ? modules[target].name : "(none)";
+    char *l = lvl ? "high" : "low";
+
+    printf("%s -%s-> %s\n", src, l, tgt);
+
+    int idx = q_write_idx % MAX_QUEUE;
+    queue[idx].level = lvl;
+    queue[idx].source = source;
+    queue[idx].target = target;
+    ++q_write_idx;
+}
+
+static void handle_broadcast(struct module *m, struct pulse *p)
+{
+    for (int o = 0; m->outputs[o]; ++o)
+        send_pulse(p->level, m->id, m->outputs[o]);
+}
+
+static void handle_flipflop(struct module *m, struct pulse *p)
+{
+    assert(m->type == FLIP_FLOP);
+    if (p->level == LOW)
+    {
+        m->state ^= 1;
+        p->level = m->state ? HIGH : LOW;
+        handle_broadcast(m, p);
+    }
+}
+
+static void handle_conjunction(struct module *m, struct pulse *p)
+{
+    assert(m->type == CONJUNCTION);
+    assert(p->source != -1 && p->source < MAX_DEVICES);
+
+    if (p->level == LOW)
+        m->state &= ~(1 << p->source);
+    else
+        m->state |= 1 << p->source;
+
+    p->level = m->state == m->input_mask ? LOW : HIGH;
+
+    handle_broadcast(m, p);
 }
