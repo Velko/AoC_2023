@@ -24,6 +24,8 @@ enum module_type
     RX,
 };
 
+const char *type_c = "*%&=";
+
 #define MAX_OUTPUTS     8
 
 
@@ -77,6 +79,8 @@ static void print_dependencies();
 static void send_pulse(enum level lvl, int source, int target);
 static void push_button();
 static void handle_rx(struct module *m, struct pulse *p);
+static void rename_module(const char *from, const char *to);
+static void rename_modules();
 
 
 int main(void)
@@ -109,6 +113,8 @@ int main(void)
     fclose(input);
 
     wire_inputs();
+
+    rename_modules();
 
     print_dependencies();
 
@@ -197,6 +203,85 @@ static void parse_module(char *line)
     }
 }
 
+
+
+static void rename_modules()
+{
+    rename_module("nr", "r_mux"); 
+    rename_module("fk", "r_a");
+    rename_module("lh", "r_b");
+    rename_module("ff", "r_c");
+    rename_module("mm", "r_d");
+    rename_module("tz", "a_mux");    // -------
+    rename_module("cn", "a_1");
+    rename_module("zl", "a_2");
+    rename_module("cm", "a_3");
+    rename_module("ls", "a_4");
+    rename_module("fj", "a_5");
+    rename_module("zt", "a_6");
+    rename_module("fq", "a_7");
+    rename_module("bn", "a_8");
+    rename_module("hx", "a_9");
+    rename_module("jx", "a_10");
+    rename_module("np", "a_11");
+    rename_module("vm", "a_12");
+    rename_module("mq", "b_mux");  // -------
+    rename_module("sj", "b_1");
+    rename_module("gz", "b_2");
+    rename_module("km", "b_3");
+    rename_module("fv", "b_4");
+    rename_module("jr", "b_5");
+    rename_module("xn", "b_6");
+    rename_module("gq", "b_7");
+    rename_module("pp", "b_8");
+    rename_module("zp", "b_9");
+    rename_module("xz", "b_10");
+    rename_module("lq", "b_11");
+    rename_module("xv", "b_12");
+    rename_module("xf", "c_mux"); // -------
+    rename_module("gb", "c_1");
+    rename_module("ln", "c_2");
+    rename_module("fb", "c_3");
+    rename_module("cq", "c_4");
+    rename_module("cv", "c_5");
+    rename_module("sx", "c_6");
+    rename_module("kh", "c_7");
+    rename_module("qj", "c_8");
+    rename_module("sq", "c_9");
+    rename_module("kr", "c_10");
+    rename_module("dk", "c_11");
+    rename_module("fh", "c_12");
+    rename_module("tg", "d_mux");  // -------
+    rename_module("pf", "d_1");
+    rename_module("rq", "d_2");
+    rename_module("nv", "d_3");
+    rename_module("dx", "d_4");
+    rename_module("ht", "d_5");
+    rename_module("hn", "d_6");
+    rename_module("qn", "d_7");
+    rename_module("rr", "d_8");
+    rename_module("cf", "d_9");
+    rename_module("zc", "d_10");
+    rename_module("rp", "d_11");
+    rename_module("bc", "d_12");
+
+    // rename_module("", "d_");
+    // rename_module("", "d_");
+    // rename_module("", "d_");
+    // rename_module("", "d_");
+
+}
+
+
+
+static void rename_module(const char *from, const char *to)
+{
+    int id = dev_id_from_name(from);
+    assert(id > 0 && id < ndevices);
+
+    strcpy(modules[id].name, to);
+}
+
 static int dev_id_from_name(const char *name)
 {
     int i;
@@ -225,7 +310,7 @@ static void print_dependencies()
 {
     for (int m = 1; m < ndevices; ++m)
     {
-        printf("%d %s (", modules[m].type, modules[m].name);
+        printf("%c %s (", type_c[modules[m].type], modules[m].name);
         for (int i = 1; i < ndevices; ++i)
         {
             if (modules[m].input_mask & (1ULL << i))
@@ -277,10 +362,22 @@ static void send_pulse(enum level lvl, int source, int target)
     ++q_write_idx;
 }
 
+long prev_steps = 0;
+
 static void handle_broadcast(struct module *m, struct pulse *p)
 {
     for (int o = 0; m->outputs[o]; ++o)
         send_pulse(p->level, m->id, m->outputs[o]);
+
+    if (p->level == LOW)
+    {
+        if (strcmp(m->name, "vm") == 0)
+        {
+            printf("%s  @ %ld     +%ld\n", m->name, button_presses, button_presses - prev_steps);
+            prev_steps = button_presses;
+        }
+    }
+
 }
 
 static void handle_flipflop(struct module *m, struct pulse *p)
@@ -288,7 +385,6 @@ static void handle_flipflop(struct module *m, struct pulse *p)
     assert(m->type == FLIP_FLOP);
     if (p->level == LOW)
     {
-        printf("%s  @ %ld\n", m->name, button_presses);
         m->state ^= 1;
         p->level = m->state ? HIGH : LOW;
         handle_broadcast(m, p);
