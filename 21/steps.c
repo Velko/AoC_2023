@@ -4,10 +4,17 @@
 #include <assert.h>
 #include <stdbool.h>
 
-#define     MULTIPLIER  13
+#define     MULTIPLIER  15
 
-#define INPUT_SIZE     16
+#define INPUT_SIZE     140
 
+#define TARGET_STEPS        26501365
+
+#define DBLOCK_SIZE          262
+
+#define FULL_DBLOCKS         2
+
+#define STEP_REMINDER       (TARGET_STEPS % DBLOCK_SIZE)
 
 #define BUFFER_SIZE (INPUT_SIZE * MULTIPLIER)
 #define CENTER_OFFSET       (MULTIPLIER / 2)
@@ -83,7 +90,9 @@ int main(void)
 
     mark_around(start_row, start_col, 1);
 
-    for (int step = 1; step < 56; ++step)
+    printf("Target steps: %d\n", (FULL_DBLOCKS * DBLOCK_SIZE + STEP_REMINDER));
+
+    for (int step = 1; step < (FULL_DBLOCKS * DBLOCK_SIZE + STEP_REMINDER); ++step)
     {
         mark_steps(step);
     };
@@ -110,10 +119,10 @@ int main(void)
 }
 
 
+int copy_visited[BUFFER_SIZE][BUFFER_SIZE];
+
 static void mark_steps(int step)
 {
-    int copy_visited[BUFFER_SIZE][BUFFER_SIZE];
-
     memcpy(copy_visited, visited, sizeof(visited));
 
     for (int r = 0; r < nrows; ++r)
