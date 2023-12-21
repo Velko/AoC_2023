@@ -4,9 +4,9 @@
 #include <assert.h>
 #include <stdbool.h>
 
-#define     MULTIPLIER  9
+#define     MULTIPLIER  13
 
-#define INPUT_SIZE     140
+#define INPUT_SIZE     16
 
 
 #define BUFFER_SIZE (INPUT_SIZE * MULTIPLIER)
@@ -28,6 +28,7 @@ int nrows, ncols;
 static void mark_around(int row, int col, int step);
 static void mark_steps(int step);
 static int count_reached();
+static int count_reached_cell(int cell_y, int cell_x);
 
 int main(void)
 {
@@ -54,7 +55,7 @@ int main(void)
     }
     fclose(input);
 
-    printf("%dx%d\n", orig_nrows, orig_ncols);
+    printf("%dx%d  *%d\n", orig_nrows, orig_ncols, MULTIPLIER);
 
     nrows = orig_nrows * MULTIPLIER;
     ncols = orig_ncols * MULTIPLIER;
@@ -82,15 +83,24 @@ int main(void)
 
     mark_around(start_row, start_col, 1);
 
-    for (int step = 1; step < 50; ++step)
+    for (int step = 1; step < 56; ++step)
     {
         mark_steps(step);
-        int reached = count_reached();
-        printf("Steps: %d Reached: %d\n", step, reached);
     };
 
 
-    for (int r = 0; r < nrows; ++r) printf("%s\n", garden[r]);
+    //for (int r = 0; r < nrows; ++r) printf("%s\n", garden[r]);
+
+    for (int cy = 0; cy < MULTIPLIER; ++cy)
+    {
+        for (int cx = 0; cx < MULTIPLIER; ++cx)
+        {
+            int creach = count_reached_cell(cy, cx);
+            printf("%4d ", creach);
+        }
+        printf("\n");
+    }
+
 
     int total = count_reached();
     // result p1: 3853
@@ -160,6 +170,25 @@ static int count_reached()
         for (int c = 0; c < ncols; ++c)
         {
             if (garden[r][c] == REACH_MARKER)
+                ++num_reached;
+        }
+    }
+
+    return num_reached;
+}
+
+
+static int count_reached_cell(int cell_y, int cell_x)
+{
+    int num_reached = 0;
+    int offy = cell_y * orig_nrows;
+    int offx = cell_x * orig_ncols;
+
+    for (int r = 0; r < orig_nrows; ++r)
+    {
+        for (int c = 0; c < orig_ncols; ++c)
+        {
+            if (garden[r + offy][c + offx] == REACH_MARKER)
                 ++num_reached;
         }
     }
