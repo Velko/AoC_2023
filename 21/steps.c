@@ -4,7 +4,7 @@
 #include <assert.h>
 #include <stdbool.h>
 
-#define     MULTIPLIER  15
+#define     MULTIPLIER  19
 
 #define INPUT_SIZE     140
 
@@ -12,7 +12,7 @@
 
 #define DBLOCK_SIZE          262
 
-#define FULL_DBLOCKS         2
+#define FULL_DBLOCKS         4
 
 #define STEP_REMINDER       (TARGET_STEPS % DBLOCK_SIZE)
 
