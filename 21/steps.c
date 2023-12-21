@@ -4,10 +4,16 @@
 #include <assert.h>
 #include <stdbool.h>
 
-#define BUFFER_SIZE     140
+#define     MULTIPLIER  9
 
-char garden[BUFFER_SIZE][BUFFER_SIZE];
-int nrows, ncols;
+#define INPUT_SIZE     140
+
+
+#define BUFFER_SIZE (INPUT_SIZE * MULTIPLIER)
+#define CENTER_OFFSET       (MULTIPLIER / 2)
+
+char orig_garden[INPUT_SIZE][INPUT_SIZE];
+int orig_nrows, orig_ncols;
 
 int start_row, start_col;
 
@@ -15,7 +21,9 @@ int start_row, start_col;
 #define REACH_MARKER    'O'
 #define ROCK_MARKER     '#'
 
+char garden[BUFFER_SIZE][BUFFER_SIZE];
 int visited[BUFFER_SIZE][BUFFER_SIZE];
+int nrows, ncols;
 
 static void mark_around(int row, int col, int step);
 static void mark_steps(int step);
@@ -25,33 +33,61 @@ int main(void)
 {
     FILE *input = fopen("input.txt", "r");
 
-    nrows = ncols = 0;
+    orig_nrows = orig_ncols = 0;
     for (;;)
     {
-        if (fgets(garden[nrows], BUFFER_SIZE, input) == NULL) break;
+        if (fgets(orig_garden[orig_nrows], INPUT_SIZE, input) == NULL) break;
 
-        if (ncols == 0)
-            ncols = strlen(garden[nrows]) - 1;
+        if (orig_ncols == 0)
+            orig_ncols = strlen(orig_garden[orig_nrows]) - 1;
 
-        char *p = strchr(garden[nrows], 'S');
+        char *p = strchr(orig_garden[orig_nrows], 'S');
         if (p)
         {
-            start_row = nrows;
-            start_col = p - garden[nrows];
+            start_row = orig_nrows;
+            start_col = p - orig_garden[orig_nrows];
         }
 
-        garden[nrows][ncols] = 0; // chomp \n
+        orig_garden[orig_nrows][orig_ncols] = 0; // chomp \n
 
-        ++nrows;
+        ++orig_nrows;
     }
     fclose(input);
+
+    printf("%dx%d\n", orig_nrows, orig_ncols);
+
+    nrows = orig_nrows * MULTIPLIER;
+    ncols = orig_ncols * MULTIPLIER;
+
+
+    start_row += CENTER_OFFSET * orig_nrows;
+    start_col += CENTER_OFFSET * orig_ncols;
+
+    for (int r = 0; r < orig_nrows; ++r)
+    {
+        for (int m = 0; m < MULTIPLIER; ++m)
+            memcpy(&garden[r][m * orig_ncols], orig_garden[r], orig_ncols + 1);
+    }
+
+    for (int m = 1; m < MULTIPLIER; ++m)
+    {
+        memcpy(&garden[m * orig_nrows], garden, BUFFER_SIZE * orig_nrows);
+    }
+
+    // for (int r = 0; r < nrows; ++r) printf("%s\n", garden[r]);
+    // return 0;
+
 
     memset(visited, 0, sizeof(visited));
 
     mark_around(start_row, start_col, 1);
 
-    for (int step = 1; step < 64; ++step)
+    for (int step = 1; step < 50; ++step)
+    {
         mark_steps(step);
+        int reached = count_reached();
+        printf("Steps: %d Reached: %d\n", step, reached);
+    };
 
 
     for (int r = 0; r < nrows; ++r) printf("%s\n", garden[r]);
