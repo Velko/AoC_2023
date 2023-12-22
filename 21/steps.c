@@ -4,17 +4,14 @@
 #include <assert.h>
 #include <stdbool.h>
 
-#define     MULTIPLIER  19
+//#define DEBUG_PRINT
+
+#define     MULTIPLIER  5
 
 #define INPUT_SIZE     140
 
-#define TARGET_STEPS        26501365
-
-#define DBLOCK_SIZE          262
-
-#define FULL_DBLOCKS         4
-
-#define STEP_REMINDER       (TARGET_STEPS % DBLOCK_SIZE)
+#define TARGET_STEPS_P1           64
+#define TARGET_STEPS_P2     26501365
 
 #define BUFFER_SIZE (INPUT_SIZE * MULTIPLIER)
 #define CENTER_OFFSET       (MULTIPLIER / 2)
@@ -34,7 +31,6 @@ int nrows, ncols;
 
 static void mark_around(int row, int col, int step);
 static void mark_steps(int step);
-static int count_reached();
 static int count_reached_cell(int cell_y, int cell_x);
 
 int main(void)
@@ -82,24 +78,78 @@ int main(void)
         memcpy(&garden[m * orig_nrows], garden, BUFFER_SIZE * orig_nrows);
     }
 
-    // for (int r = 0; r < nrows; ++r) printf("%s\n", garden[r]);
-    // return 0;
-
-
     memset(visited, 0, sizeof(visited));
 
     mark_around(start_row, start_col, 1);
 
-    printf("Target steps: %d\n", (FULL_DBLOCKS * DBLOCK_SIZE + STEP_REMINDER));
-
-    for (int step = 1; step < (FULL_DBLOCKS * DBLOCK_SIZE + STEP_REMINDER); ++step)
+    int step;
+    for (step = 1; step < TARGET_STEPS_P1; ++step)
     {
         mark_steps(step);
-    };
+    }
 
+    int result1 = count_reached_cell(CENTER_OFFSET, CENTER_OFFSET);
+    // result p1: 3853
+    printf("Result p1: %d\n", result1);
 
-    //for (int r = 0; r < nrows; ++r) printf("%s\n", garden[r]);
+    #ifdef DEBUG_PRINT
+        for (int r = orig_nrows * CENTER_OFFSET; r < (orig_nrows * (CENTER_OFFSET + 1)); ++r)
+        {
+            char line[INPUT_SIZE];
+            strncpy(line, garden[r] + orig_ncols * CENTER_OFFSET, orig_ncols);
+            line[orig_ncols] = 0;
+            printf("%s\n", line);
+        }
+    #endif
 
+    // minimum distance has to be 2x the size of original garden
+    // + whatever is the reminder when target step count is divided
+    // by that
+    assert(orig_ncols == orig_nrows);
+    int double_block = orig_ncols * 2;
+    int step_reminder = TARGET_STEPS_P2 % double_block;
+    long target_dblocks = TARGET_STEPS_P2 / double_block;
+
+    // continue walking
+    for (; step < double_block + step_reminder; ++step)
+    {
+        mark_steps(step);
+    }
+
+    long result2 = count_reached_cell(CENTER_OFFSET, 0)
+                 + count_reached_cell(CENTER_OFFSET, MULTIPLIER - 1)
+                 + count_reached_cell(0, CENTER_OFFSET)
+                 + count_reached_cell(MULTIPLIER - 1, CENTER_OFFSET);
+
+    int outer_shell = count_reached_cell(CENTER_OFFSET - 1, 0)
+                    + count_reached_cell(CENTER_OFFSET + 1, 0)
+                    + count_reached_cell(0, CENTER_OFFSET + 1)
+                    + count_reached_cell(MULTIPLIER - 1, CENTER_OFFSET + 1);
+
+    int inner_shell = count_reached_cell(CENTER_OFFSET - 1, 1)
+                    + count_reached_cell(CENTER_OFFSET + 1, 1)
+                    + count_reached_cell(1, CENTER_OFFSET + 1)
+                    + count_reached_cell(MULTIPLIER - 2, CENTER_OFFSET + 1);
+
+    int center_fill = count_reached_cell(CENTER_OFFSET, CENTER_OFFSET);
+    int outer_fill  = count_reached_cell(CENTER_OFFSET + 1, CENTER_OFFSET);
+
+    // Formulas were derived by analysis of generated outputs for
+    // 2x, 3x and 4x double_block + rem step outputs (see calc_prod.py file)
+    // Not sure if this is optimal calculation, but it seems to work.
+    long dbc = 4 * (target_dblocks - 1) * target_dblocks;
+    long inner_count = 1 + dbc;
+    long outer_count = 4 * target_dblocks + dbc;
+
+    result2 += outer_shell * 2 * target_dblocks;
+    result2 += inner_shell * (2 * target_dblocks - 1);
+    result2 += inner_count * center_fill;
+    result2 += outer_count * outer_fill;
+
+    // Result p2: 639051580070841
+    printf("Result p2: %ld\n", result2);
+
+    #ifdef DEBUG_PRINT
     for (int cy = 0; cy < MULTIPLIER; ++cy)
     {
         for (int cx = 0; cx < MULTIPLIER; ++cx)
@@ -109,11 +159,7 @@ int main(void)
         }
         printf("\n");
     }
-
-
-    int total = count_reached();
-    // result p1: 3853
-    printf("Result: %d\n", total);
+    #endif
 
     return 0;
 }
@@ -170,22 +216,6 @@ static void mark_around(int row, int col, int step)
         visited[row][col + 1] = step;
     }
 }
-
-static int count_reached()
-{
-    int num_reached = 0;
-    for (int r = 0; r < nrows; ++r)
-    {
-        for (int c = 0; c < ncols; ++c)
-        {
-            if (garden[r][c] == REACH_MARKER)
-                ++num_reached;
-        }
-    }
-
-    return num_reached;
-}
-
 
 static int count_reached_cell(int cell_y, int cell_x)
 {
