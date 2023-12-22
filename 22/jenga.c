@@ -14,13 +14,13 @@ struct coord
     int z;
 };
 
-struct cube
+struct brick
 {
     struct coord start;
     struct coord end;
 };
 
-#define MAX_CUBES       1500
+#define MAX_BRICKS       1500
 
 #define MAX_Z       350
 #define MAX_Y        10
@@ -28,8 +28,8 @@ struct cube
 
 struct state
 {
-    struct cube cubes[MAX_CUBES];
-    int ncubes;
+    struct brick bricks[MAX_BRICKS];
+    int nbricks;
     bool pile[MAX_Z][MAX_Y][MAX_X];
 };
 
@@ -37,13 +37,13 @@ struct state root_state;
 
 static void init_state(struct state *state);
 static void parse_line(struct state *state, const char *line);
-static bool is_place_occupied(struct state *state, struct cube *cube);
-static bool fall_cube(struct state *state, int cube_idx);
-static bool can_fall(struct state *state, int cube_idx);
-static void set_pile(struct state *state, int cube_idx, bool occupied);
-static void sort_cubes(struct state *state);
-static int drop_all_cubes(struct state *state, int skip_cube);
-static int num_will_fall_if_removed(struct state *state, int cube_idx);
+static bool is_place_occupied(struct state *state, struct brick *brick);
+static bool drop_brick(struct state *state, int brick_idx);
+static bool can_fall(struct state *state, int brick_idx);
+static void set_pile(struct state *state, int brick_idx, bool occupied);
+static void sort_bricks(struct state *state);
+static int drop_all_bricks(struct state *state, int skip_brick);
+static int num_will_fall_if_removed(struct state *state, int brick_idx);
 
 int main(void)
 {
@@ -58,14 +58,14 @@ int main(void)
     }
     fclose(input);
 
-    sort_cubes(&root_state);
+    sort_bricks(&root_state);
 
-    drop_all_cubes(&root_state, -1);
+    drop_all_bricks(&root_state, -1);
 
     int result1 = 0;
     int result2 = 0;
 
-    for (int c = 0; c < root_state.ncubes; ++c)
+    for (int c = 0; c < root_state.nbricks; ++c)
     {
         int fell = num_will_fall_if_removed(&root_state, c);
 
@@ -93,72 +93,72 @@ static void init_state(struct state *state)
 
 static void parse_line(struct state *state, const char *line)
 {
-    struct cube *cube = &state->cubes[state->ncubes];
+    struct brick *brick = &state->bricks[state->nbricks];
 
     int n = sscanf(line, "%d,%d,%d~%d,%d,%d",
-        &cube->start.x,
-        &cube->start.y,
-        &cube->start.z,
-        &cube->end.x,
-        &cube->end.y,
-        &cube->end.z
+        &brick->start.x,
+        &brick->start.y,
+        &brick->start.z,
+        &brick->end.x,
+        &brick->end.y,
+        &brick->end.z
     );
     assert(n == 6);
 
     // validate that *start* is always lower
-    assert(cube->start.z <= cube->end.z);
-    ++state->ncubes;
+    assert(brick->start.z <= brick->end.z);
+    ++state->nbricks;
 }
 
-static int drop_all_cubes(struct state *state, int skip_cube)
+static int drop_all_bricks(struct state *state, int skip_brick)
 {
     int fall_count = 0;
 
-    for (int c = 0; c < state->ncubes; ++c)
+    for (int c = 0; c < state->nbricks; ++c)
     {
-        if (c == skip_cube) continue;;
-        if (fall_cube(state, c))
+        if (c == skip_brick) continue;;
+        if (drop_brick(state, c))
             ++fall_count;
     }
 
     return fall_count;
 }
 
-static bool fall_cube(struct state *state, int cube_idx)
+static bool drop_brick(struct state *state, int brick_idx)
 {
     bool fell = false;
 
     // clear it from pile before it starts moving (again)
-    set_pile(state, cube_idx, false);
+    set_pile(state, brick_idx, false);
 
-    while (can_fall(state, cube_idx))
+    while (can_fall(state, brick_idx))
     {
-        --state->cubes[cube_idx].start.z;
-        --state->cubes[cube_idx].end.z;
+        --state->bricks[brick_idx].start.z;
+        --state->bricks[brick_idx].end.z;
         fell = true;
     }
 
-    // cube has fallen as low as it will go, settle it in
-    set_pile(state, cube_idx, true);
+    // brick has fallen as low as it will go, settle it in
+    set_pile(state, brick_idx, true);
 
     return fell;
 }
 
-static void set_pile(struct state *state, int cube_idx, bool occupied)
+static void set_pile(struct state *state, int brick_idx, bool occupied)
 {
-    struct cube *cube = &state->cubes[cube_idx];
+    struct brick *brick = &state->bricks[brick_idx];
 
-    assert(cube->start.z <= cube->end.z);
-    assert(cube->end.z < MAX_Z);
-    for (int z = cube->start.z; z <= cube->end.z; ++z)
+    assert(brick->start.z <= brick->end.z);
+    assert(brick->end.z < MAX_Z);
+    for (int z = brick->start.z; z <= brick->end.z; ++z)
     {
-        assert(cube->start.y <= cube->end.y);
-        assert(cube->end.y < MAX_Y);
-        for (int y = cube->start.y; y <= cube->end.y; ++y)
+        assert(brick->start.y <= brick->end.y);
+        assert(brick->end.y < MAX_Y);
+        for (int y = brick->start.y; y <= brick->end.y; ++y)
         {
-            assert(cube->start.x <= cube->end.x);
-            assert(cube->end.x < MAX_X);
-            for (int x = cube->start.x; x <= cube->end.x; ++x)
+            assert(brick->start.x <= brick->end.x);
+            assert(brick->end.x < MAX_X);
+            for (int x = brick->start.x; x <= brick->end.x; ++x)
             {
                 state->pile[z][y][x] = occupied;
             }
@@ -166,27 +166,27 @@ static void set_pile(struct state *state, int cube_idx, bool occupied)
     }
 }
 
-static bool can_fall(struct state *state, int cube_idx)
+static bool can_fall(struct state *state, int brick_idx)
 {
-    if (state->cubes[cube_idx].start.z == 1) return false;
+    if (state->bricks[brick_idx].start.z == 1) return false;
 
-    struct cube candidate = state->cubes[cube_idx];
+    struct brick candidate = state->bricks[brick_idx];
     --candidate.start.z;
     --candidate.end.z;
 
     return !is_place_occupied(state, &candidate);
 }
 
-static bool is_place_occupied(struct state *state, struct cube *cube)
+static bool is_place_occupied(struct state *state, struct brick *brick)
 {
     // probably can do smarter check but this should do
-    assert(cube->start.y <= cube->end.y);
-    for (int y = cube->start.y; y <= cube->end.y; ++y)
+    assert(brick->start.y <= brick->end.y);
+    for (int y = brick->start.y; y <= brick->end.y; ++y)
     {
-        assert(cube->start.x <= cube->end.x);
-        for (int x = cube->start.x; x <= cube->end.x; ++x)
+        assert(brick->start.x <= brick->end.x);
+        for (int x = brick->start.x; x <= brick->end.x; ++x)
         {
-            if (state->pile[cube->start.z][y][x])
+            if (state->pile[brick->start.z][y][x])
                 return true;
         }
     }
@@ -194,28 +194,28 @@ static bool is_place_occupied(struct state *state, struct cube *cube)
     return false;
 }
 
-static int num_will_fall_if_removed(struct state *state, int cube_idx)
+static int num_will_fall_if_removed(struct state *state, int brick_idx)
 {
-    // Testing what happens if a cube is removed modifies the overall state,
+    // Testing what happens if a brick is removed modifies the overall state,
     // but for next test we need to start from the original again.
     // Therefore, create a copy and test on that instead
     struct state copy;
     memcpy(&copy, state, sizeof(struct state));
 
     // simply erase the block
-    set_pile(&copy, cube_idx, false);
+    set_pile(&copy, brick_idx, false);
 
     // and see what happens
-    return drop_all_cubes(&copy, cube_idx);
+    return drop_all_bricks(&copy, brick_idx);
 }
 
-static int cmp_cubes_z(const void *a, const void *b);
-static void sort_cubes(struct state *state)
+static int cmp_bricks_z(const void *a, const void *b);
+static void sort_bricks(struct state *state)
 {
-    qsort(state->cubes, state->ncubes, sizeof(struct cube), cmp_cubes_z);
+    qsort(state->bricks, state->nbricks, sizeof(struct brick), cmp_bricks_z);
 }
 
-static int cmp_cubes_z(const void *a, const void *b)
+static int cmp_bricks_z(const void *a, const void *b)
 {
-    return ((const struct cube *)a)->start.z - ((const struct cube *)b)->start.z;
+    return ((const struct brick *)a)->start.z - ((const struct brick *)b)->start.z;
 }
