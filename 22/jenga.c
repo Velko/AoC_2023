@@ -37,10 +37,10 @@ bool pile[MAX_Z][MAX_Y][MAX_X];
 
 static void parse_line(const char *line);
 static bool is_place_occupied(struct cube *cube);
-static bool fall_cube(struct cube *cube);
+static bool fall_cube(int cube_idx);
 static void sort_cubes();
 static void measure();
-static int num_will_fall_if_removed(struct cube *cube);
+static int num_will_fall_if_removed(int cube_idx);
 int main(void)
 {
     char line[BUFFER_SIZE];
@@ -61,7 +61,7 @@ int main(void)
     // initial fall
     for (int c = 0; c < ncubes; ++c)
     {
-        fall_cube(cubes + c);
+        fall_cube(c);
     }
 
     int result1 = 0;
@@ -69,7 +69,7 @@ int main(void)
 
     for (int c = 0; c < ncubes; ++c)
     {
-        int fell = num_will_fall_if_removed(cubes + c);
+        int fell = num_will_fall_if_removed(c);
         if (fell == 0)
         {
             ++result1;
@@ -105,19 +105,21 @@ static void parse_line(const char *line)
     ++ncubes;
 }
 
-static bool can_fall(struct cube *cube)
+static bool can_fall(int cube_idx)
 {
-    if (cube->start.z == 1) return false;
+    if (cubes[cube_idx].start.z == 1) return false;
 
-    struct cube candidate = *cube;
+    struct cube candidate = cubes[cube_idx];
     --candidate.start.z;
     --candidate.end.z;
 
     return !is_place_occupied(&candidate);
 }
 
-static void set_pile(struct cube *cube, bool occupied)
+static void set_pile(int cube_idx, bool occupied)
 {
+    struct cube *cube = &cubes[cube_idx];
+
     assert(cube->start.z <= cube->end.z);
     assert(cube->end.z < MAX_Z);
     for (int z = cube->start.z; z <= cube->end.z; ++z)
@@ -136,25 +138,25 @@ static void set_pile(struct cube *cube, bool occupied)
     }
 }
 
-static bool fall_cube(struct cube *cube)
+static bool fall_cube(int cube_idx)
 {
     bool fell = false;
-    set_pile(cube, false);
+    set_pile(cube_idx, false);
 
-    while (can_fall(cube))
+    while (can_fall(cube_idx))
     {
-        --cube->start.z;
-        --cube->end.z;
+        --cubes[cube_idx].start.z;
+        --cubes[cube_idx].end.z;
         fell = true;
     }
 
     // cube has fallen as low as it will go, settle it in
-    set_pile(cube, true);
+    set_pile(cube_idx, true);
 
     return fell;
 }
 
-static int num_will_fall_if_removed(struct cube *cube)
+static int num_will_fall_if_removed(int cube_idx)
 {
     bool backup_pile[MAX_Z][MAX_Y][MAX_X];
     struct cube backup_cubes[MAX_CUBES];
@@ -162,14 +164,14 @@ static int num_will_fall_if_removed(struct cube *cube)
     memcpy(backup_pile, pile, sizeof(pile));
     memcpy(backup_cubes, cubes, sizeof(cubes));
 
-    set_pile(cube, false);
+    set_pile(cube_idx, false);
 
     int will_fall = 0;
 
     for (int c = 0; c < ncubes; ++c)
     {
-        if (cubes + c != cube)
-            if (fall_cube(cubes + c))
+        if (c != cube_idx)
+            if (fall_cube(c))
                 ++will_fall;
     }
 
