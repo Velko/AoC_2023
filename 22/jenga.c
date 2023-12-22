@@ -37,10 +37,10 @@ bool pile[MAX_Z][MAX_Y][MAX_X];
 
 static void parse_line(const char *line);
 static bool is_place_occupied(struct cube *cube);
-static void fall_cube(struct cube *cube);
+static bool fall_cube(struct cube *cube);
 static void sort_cubes();
 static void measure();
-static bool can_remove_cube(struct cube *cube);
+static int num_will_fall_if_removed(struct cube *cube);
 int main(void)
 {
     char line[BUFFER_SIZE];
@@ -64,16 +64,25 @@ int main(void)
         fall_cube(cubes + c);
     }
 
-    int total = 0;
+    int result1 = 0;
+    int result2 = 0;
 
     for (int c = 0; c < ncubes; ++c)
     {
-        if (can_remove_cube(cubes + c))
-            ++total;
+        int fell = num_will_fall_if_removed(cubes + c);
+        if (fell == 0)
+        {
+            ++result1;
+        }
+        result2 += fell;
     }
 
     // result p1: 524
-    printf("Result: %d\n", total);
+    printf("Result p1: %d\n", result1);
+    
+    // result p2: 77070
+    printf("Result p2: %d\n", result2);
+
 
     return 0;
 }
@@ -127,36 +136,47 @@ static void set_pile(struct cube *cube, bool occupied)
     }
 }
 
-static void fall_cube(struct cube *cube)
+static bool fall_cube(struct cube *cube)
 {
+    bool fell = false;
+    set_pile(cube, false);
+
     while (can_fall(cube))
     {
         --cube->start.z;
         --cube->end.z;
+        fell = true;
     }
 
     // cube has fallen as low as it will go, settle it in
     set_pile(cube, true);
+
+    return fell;
 }
 
-static bool can_remove_cube(struct cube *cube)
+static int num_will_fall_if_removed(struct cube *cube)
 {
-    bool backup[MAX_Z][MAX_Y][MAX_X];
-    memcpy(backup, pile, sizeof(pile));
+    bool backup_pile[MAX_Z][MAX_Y][MAX_X];
+    struct cube backup_cubes[MAX_CUBES];
+
+    memcpy(backup_pile, pile, sizeof(pile));
+    memcpy(backup_cubes, cubes, sizeof(cubes));
 
     set_pile(cube, false);
 
-    bool can_remove = true;
+    int will_fall = 0;
 
-    for (int c = 0; c < ncubes && can_remove; ++c)
+    for (int c = 0; c < ncubes; ++c)
     {
         if (cubes + c != cube)
-            can_remove &= !can_fall(cubes + c);
+            if (fall_cube(cubes + c))
+                ++will_fall;
     }
 
-    memcpy(pile, backup, sizeof(pile));
+    memcpy(pile, backup_pile, sizeof(pile));
+    memcpy(cubes, backup_cubes, sizeof(cubes));
 
-    return can_remove;
+    return will_fall;
 }
 
 static bool is_place_occupied(struct cube *cube)
