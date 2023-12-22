@@ -39,8 +39,10 @@ static void init_state(struct state *state);
 static void parse_line(struct state *state, const char *line);
 static bool is_place_occupied(struct state *state, struct cube *cube);
 static bool fall_cube(struct state *state, int cube_idx);
+static bool can_fall(struct state *state, int cube_idx);
+static void set_pile(struct state *state, int cube_idx, bool occupied);
 static void sort_cubes(struct state *state);
-static void drop_all_cubes(struct state *state);
+static int drop_all_cubes(struct state *state, int skip_cube);
 static int num_will_fall_if_removed(struct state *state, int cube_idx);
 
 int main(void)
@@ -58,7 +60,7 @@ int main(void)
 
     sort_cubes(&root_state);
 
-    drop_all_cubes(&root_state);
+    drop_all_cubes(&root_state, -1);
 
     int result1 = 0;
     int result2 = 0;
@@ -108,21 +110,38 @@ static void parse_line(struct state *state, const char *line)
     ++state->ncubes;
 }
 
-static void drop_all_cubes(struct state *state)
+static int drop_all_cubes(struct state *state, int skip_cube)
 {
+    int fall_count = 0;
+
     for (int c = 0; c < state->ncubes; ++c)
-        fall_cube(state, c);
+    {
+        if (c == skip_cube) continue;;
+        if (fall_cube(state, c))
+            ++fall_count;
+    }
+
+    return fall_count;
 }
 
-static bool can_fall(struct state *state, int cube_idx)
+static bool fall_cube(struct state *state, int cube_idx)
 {
-    if (state->cubes[cube_idx].start.z == 1) return false;
+    bool fell = false;
 
-    struct cube candidate = state->cubes[cube_idx];
-    --candidate.start.z;
-    --candidate.end.z;
+    // clear it from pile before it starts moving (again)
+    set_pile(state, cube_idx, false);
 
-    return !is_place_occupied(state, &candidate);
+    while (can_fall(state, cube_idx))
+    {
+        --state->cubes[cube_idx].start.z;
+        --state->cubes[cube_idx].end.z;
+        fell = true;
+    }
+
+    // cube has fallen as low as it will go, settle it in
+    set_pile(state, cube_idx, true);
+
+    return fell;
 }
 
 static void set_pile(struct state *state, int cube_idx, bool occupied)
@@ -147,42 +166,15 @@ static void set_pile(struct state *state, int cube_idx, bool occupied)
     }
 }
 
-static bool fall_cube(struct state *state, int cube_idx)
+static bool can_fall(struct state *state, int cube_idx)
 {
-    bool fell = false;
-    set_pile(state, cube_idx, false);
+    if (state->cubes[cube_idx].start.z == 1) return false;
 
-    while (can_fall(state, cube_idx))
-    {
-        --state->cubes[cube_idx].start.z;
-        --state->cubes[cube_idx].end.z;
-        fell = true;
-    }
+    struct cube candidate = state->cubes[cube_idx];
+    --candidate.start.z;
+    --candidate.end.z;
 
-    // cube has fallen as low as it will go, settle it in
-    set_pile(state, cube_idx, true);
-
-    return fell;
-}
-
-static int num_will_fall_if_removed(struct state *state, int cube_idx)
-{
-    struct state copy;
-    memcpy(&copy, state, sizeof(struct state));
-
-    set_pile(&copy, cube_idx, false);
-
-    int will_fall = 0;
-
-    for (int c = 0; c < copy.ncubes; ++c)
-    {
-        if (c == cube_idx) continue;
-
-        if (fall_cube(&copy, c))
-            ++will_fall;
-    }
-
-    return will_fall;
+    return !is_place_occupied(state, &candidate);
 }
 
 static bool is_place_occupied(struct state *state, struct cube *cube)
@@ -200,6 +192,21 @@ static bool is_place_occupied(struct state *state, struct cube *cube)
     }
 
     return false;
+}
+
+static int num_will_fall_if_removed(struct state *state, int cube_idx)
+{
+    // Testing what happens if a cube is removed modifies the overall state,
+    // but for next test we need to start from the original again.
+    // Therefore, create a copy and test on that instead
+    struct state copy;
+    memcpy(&copy, state, sizeof(struct state));
+
+    // simply erase the block
+    set_pile(&copy, cube_idx, false);
+
+    // and see what happens
+    return drop_all_cubes(&copy, cube_idx);
 }
 
 static int cmp_cubes_z(const void *a, const void *b);
