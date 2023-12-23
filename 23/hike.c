@@ -12,15 +12,6 @@ int nrows, ncols;
 int start_row, start_col;
 int end_row, end_col;
 
-int visited[BUFFER_SIZE][BUFFER_SIZE];
-
-struct state
-{
-    int row;
-    int col;
-    int distance;
-};
-
 enum direction
 {
     UP,
@@ -29,6 +20,17 @@ enum direction
     RIGHT,
     NUM_DIRECTIONS
 };
+
+int visited[BUFFER_SIZE][BUFFER_SIZE][NUM_DIRECTIONS];
+
+struct state
+{
+    int row;
+    int col;
+    int distance;
+    enum direction dir;
+};
+
 
 
 int nqueue;
@@ -69,16 +71,18 @@ int main(void)
     printf("%dx%d\n", nrows, ncols);
     printf("(%d, %d) -> (%d, %d)\n", start_row, start_col, end_row, end_col);
 
-    for (int r = 0; r < nrows; ++r) printf("%s\n", maze[r]);
+    //for (int r = 0; r < nrows; ++r) printf("%s\n", maze[r]);
 
     int result1 = get_longest_path();
+    // Result p1: 2170
     printf("Result p1: %d\n", result1);
 
-    for (int r = 0; r < nrows; ++r) printf("%s\n", maze[r]);
+    //for (int r = 0; r < nrows; ++r) printf("%s\n", maze[r]);
 
     return 0;
 }
 
+static enum direction reverse(enum direction dir);
 
 static int get_longest_path()
 {
@@ -89,9 +93,12 @@ static int get_longest_path()
     {
         .row = start_row,
         .col = start_col,
+        .dir = DOWN,
         .distance = 0,
     };
     push_node(&start);
+
+    int longest_path = 0;
 
     while (nqueue > 0)
     {
@@ -100,10 +107,16 @@ static int get_longest_path()
         pop_node(&node);
 
         if (node.row == end_row && node.col == end_col)
-            return node.distance;
+        {
+            if (node.distance > longest_path)
+                longest_path = node.distance;
+            continue;
+        }
 
         for (enum direction dir = UP; dir < NUM_DIRECTIONS; ++dir)
         {
+            if (reverse(node.dir) == dir)
+                continue;
             switch (maze[node.row][node.col])
             {
             case '>':
@@ -130,6 +143,7 @@ static int get_longest_path()
             struct state new_node;
             new_node.row = move_row(node.row, dir);
             new_node.col = move_col(node.col, dir);
+            new_node.dir = dir;
 
             if (new_node.row < 0 || new_node.row >= nrows || new_node.col < 0 || new_node.col >= ncols)
                 continue;
@@ -148,7 +162,7 @@ static int get_longest_path()
 
             new_node.distance = node.distance + 1;
 
-            int *v = &visited[new_node.row][new_node.col];
+            int *v = &visited[new_node.row][new_node.col][dir];
 
             if (new_node.distance > *v)
             {
@@ -156,10 +170,9 @@ static int get_longest_path()
                 push_node(&new_node);
             }
         }
-        maze[node.row][node.col] = 'O';
     }
 
-    return -1;
+    return longest_path;
 }
 
 static int move_row(int row, enum direction dir)
@@ -188,7 +201,22 @@ static int move_col(int col, enum direction dir)
     }
 }
 
-
+static enum direction reverse(enum direction dir)
+{
+    switch (dir)
+    {
+    case UP:
+        return DOWN;
+    case DOWN:
+        return UP;
+    case LEFT:
+        return RIGHT;
+    case RIGHT:
+        return LEFT;
+    default:
+        return dir;
+    }
+}
 
 /* Implement priority queue as buckets of ring buffers */
 
