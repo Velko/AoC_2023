@@ -26,13 +26,16 @@ enum direction
 
 #define MAX_VERTICES    36
 const char *vertice_labels = "AZBCDEFGHIJKLMNOPQRSTUVWXY0123456789";
-struct vertice
+struct vertex
 {
     int row;
     int col;
 };
 
-struct vertice vertices[MAX_VERTICES];
+#define START_VERTEX     0
+#define END_VERTEX       1
+
+struct vertex vertices[MAX_VERTICES];
 int nvertices;
 
 int distances[MAX_VERTICES][MAX_VERTICES];
@@ -202,15 +205,15 @@ static void measure_graph(bool respect_slopes)
 {
     memset(distances, 0, sizeof(distances));
 
-    vertices[0].row = start_row;
-    vertices[0].col = start_col;
-    vertices[1].row = end_row;
-    vertices[1].col = end_col;
+    vertices[START_VERTEX].row = start_row;
+    vertices[START_VERTEX].col = start_col;
+    vertices[END_VERTEX].row = end_row;
+    vertices[END_VERTEX].col = end_col;
     nvertices = 2;
 
     #ifdef DEBUG_PRINT
-    maze[start_row][start_col] = vertice_labels[0];
-    maze[end_row][end_col] = vertice_labels[1];
+    maze[start_row][start_col] = vertice_labels[START_VERTEX];
+    maze[end_row][end_col] = vertice_labels[END_VERTEX];
     #endif
 
     for (int vi = 0; vi < nvertices; ++vi)
@@ -298,10 +301,11 @@ static int walk_nodes(int source, int dist_so_far, uint64_t history)
     {
         if (history & (1ULL << dest))
             continue;
-        if (distances[source][dest] > 0)
+
+        int len = distances[source][dest];
+        if (len > 0)
         {
-            int len = distances[source][dest];
-            if (dest == 1)
+            if (dest == END_VERTEX)
             {
                 return dist_so_far + len;
             }
@@ -317,7 +321,7 @@ static int walk_nodes(int source, int dist_so_far, uint64_t history)
 
 static int get_longest_path()
 {
-    return walk_nodes(0, 0, 0);
+    return walk_nodes(START_VERTEX, 0, 0);
 }
 
 
