@@ -89,16 +89,19 @@ int main(void)
         printf("%3d |", s);
         for (int d = 0; d < nvertices; ++d)
         {
-            printf("%3d ", distances[s][d]);
+            if (s != d)
+                printf("%3d ", distances[s][d]);
+            else
+                printf("  * ");
         }
         printf("\n");
     }
 
 
-    int result1 = get_longest_path();
+    int result = get_longest_path();
     // Result p1: 2170
-    // Wrong result p2: 6681 (too high)
-    printf("Result p2: %d\n", result1);
+    // Result p2: 6502
+    printf("Result: %d\n", result);
 
     #ifdef DEBUG_PRINT
     for (int r = 0; r < nrows; ++r) printf("%s\n", maze[r]);
@@ -291,11 +294,10 @@ static int move_col(int col, enum direction dir)
     }
 }
 
-static int walk_nodes(int source, uint64_t history)
-{
-    int longest = 0;
-    int ldest = -1;
+int longest_path = 0;
 
+static void walk_nodes(int source, int dist_so_far, uint64_t history)
+{
     for (int dest = 0; dest < nvertices; ++dest)
     {
         if (history & (1ULL << dest))
@@ -303,27 +305,23 @@ static int walk_nodes(int source, uint64_t history)
         if (distances[source][dest] > 0)
         {
             int len = distances[source][dest];
-            if (dest != 1)
+            if (dest == 1)
             {
-                len += walk_nodes(dest, history | (1ULL << source));
+                len += dist_so_far;
+                //printf("%d\n", len + dist_so_far);
+                if (len > longest_path)
+                    longest_path = len;
+                return;
             }
-
-            if (len > longest)
-            {
-                longest = len;
-                ldest = dest;
-            } 
+            walk_nodes(dest, dist_so_far + len, history | (1ULL << source));
         }
     }
-//    printf(" -> %d", ldest);
-    return longest;
 }
+
 
 static int get_longest_path()
 {
-//    printf("0");
-    int longest_path = walk_nodes(0, 0);
+    walk_nodes(0, 0, 0);
 
-//    printf("\n");
     return longest_path;
 }
