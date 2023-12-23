@@ -21,26 +21,23 @@ enum direction
     NUM_DIRECTIONS
 };
 
-int visited[BUFFER_SIZE][BUFFER_SIZE][NUM_DIRECTIONS];
+#define MAX_VERTICES    40
 
-struct state
+struct vertice
 {
     int row;
     int col;
-    int distance;
-    enum direction dir;
 };
 
+struct vertice vertices[MAX_VERTICES];
+int nvertices;
 
-
-int nqueue;
+int distances[MAX_VERTICES][MAX_VERTICES];
 
 static int get_longest_path();
 static int move_row(int row, enum direction dir);
 static int move_col(int col, enum direction dir);
-static void setup_queue();
-static void push_node(struct state *n);
-static void pop_node(struct state *top);
+static int num_exits(int row, int col);
 
 int main(void)
 {
@@ -68,20 +65,100 @@ int main(void)
     assert(p != NULL);
     end_col = p - maze[end_row];
 
-    printf("%dx%d\n", nrows, ncols);
-    printf("(%d, %d) -> (%d, %d)\n", start_row, start_col, end_row, end_col);
+    // printf("%dx%d\n", nrows, ncols);
+    // printf("(%d, %d) -> (%d, %d)\n", start_row, start_col, end_row, end_col);
 
     //for (int r = 0; r < nrows; ++r) printf("%s\n", maze[r]);
 
-    int result1 = get_longest_path();
+    for (int r = 0; r < nrows; ++r)
+    {
+        for (int c = 0; c < ncols; ++c)
+        {
+            if (maze[r][c] != '#')
+            {
+                int nx = num_exits(r, c);
+                if (nx > 2)
+                    maze[r][c] = nx +  '0';
+                else
+                    maze[r][c] = '.';
+            }
+        }
+    }
+
+
+    //int result1 = get_longest_path();
     // Result p1: 2170
-    printf("Result p1: %d\n", result1);
+    //rintf("Result p1: %d\n", result1);
 
-    //for (int r = 0; r < nrows; ++r) printf("%s\n", maze[r]);
+    for (int r = 0; r < nrows; ++r) printf("%s\n", maze[r]);
 
     return 0;
 }
 
+static int num_exits(int row, int col)
+{
+    int nexits = 0;
+    for (enum direction dir = UP; dir < NUM_DIRECTIONS; ++dir)
+    {
+        int new_row = move_row(row, dir);
+        int new_col = move_col(col, dir);
+
+        if (new_row < 0 || new_row >= nrows || new_col < 0 || new_col >= ncols)
+            continue;
+
+        if (maze[new_row][new_col] != '#')
+            ++nexits;
+    }
+
+    return nexits;
+}
+
+
+static int move_row(int row, enum direction dir)
+{
+    switch (dir)
+    {
+    case UP:
+        return row - 1;
+    case DOWN:
+        return row + 1;
+    default:
+        return row;
+    }
+}
+
+static int move_col(int col, enum direction dir)
+{
+    switch (dir)
+    {
+    case LEFT:
+        return col - 1;
+    case RIGHT:
+        return col + 1;
+    default:
+        return col;
+    }
+}
+
+
+/* ------------ Dijkstra related stuff ------*/
+
+
+struct state
+{
+    int row;
+    int col;
+    int distance;
+    enum direction dir;
+};
+
+int nqueue;
+
+int visited[BUFFER_SIZE][BUFFER_SIZE][NUM_DIRECTIONS];
+
+static void setup_queue();
+static void push_node(struct state *n);
+static void pop_node(struct state *top);
 static enum direction reverse(enum direction dir);
 
 static int get_longest_path()
@@ -173,32 +250,6 @@ static int get_longest_path()
     }
 
     return longest_path;
-}
-
-static int move_row(int row, enum direction dir)
-{
-    switch (dir)
-    {
-    case UP:
-        return row - 1;
-    case DOWN:
-        return row + 1;
-    default:
-        return row;
-    }
-}
-
-static int move_col(int col, enum direction dir)
-{
-    switch (dir)
-    {
-    case LEFT:
-        return col - 1;
-    case RIGHT:
-        return col + 1;
-    default:
-        return col;
-    }
 }
 
 static enum direction reverse(enum direction dir)
