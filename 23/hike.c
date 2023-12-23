@@ -7,8 +7,8 @@
 
 #define BUFFER_SIZE     150
 
-#define DEBUG_PRINT
-#define PART1
+//#define DEBUG_PRINT
+//#define PART1
 
 char maze[BUFFER_SIZE][BUFFER_SIZE];
 int nrows, ncols;
@@ -78,12 +78,31 @@ int main(void)
     measure_graph();
 
 
+    printf("    |");
+    for (int d = 0; d < nvertices; ++d)
+        printf("%3d ", d);
+    printf("\n");
+    printf("----+-----------------------------------\n");
+
+    for (int s = 0; s < nvertices; ++s)
+    {
+        printf("%3d |", s);
+        for (int d = 0; d < nvertices; ++d)
+        {
+            printf("%3d ", distances[s][d]);
+        }
+        printf("\n");
+    }
+
 
     int result1 = get_longest_path();
     // Result p1: 2170
-    printf("Result p1: %d\n", result1);
+    // Wrong result p2: 6681 (too high)
+    printf("Result p2: %d\n", result1);
 
+    #ifdef DEBUG_PRINT
     for (int r = 0; r < nrows; ++r) printf("%s\n", maze[r]);
+    #endif
 
     return 0;
 }
@@ -167,7 +186,7 @@ static void follow_path(int row, int col, int old_row, int old_col, int source, 
                 nvertices,
                 new_row, new_col,
                 distance);
-            maze[new_row][new_col] = nvertices + '0';
+            //maze[new_row][new_col] = nvertices + '0';
             #endif
             ++nvertices;
             return;
@@ -189,8 +208,8 @@ static int measure_graph()
     vertices[1].col = end_col;
     nvertices = 2;
 
-    maze[start_row][start_col] = '0';
-    maze[end_row][end_col] = '1';
+    //maze[start_row][start_col] = '0';
+    //maze[end_row][end_col] = '1';
 
     for (int vi = 0; vi < nvertices; ++vi)
     {
@@ -275,6 +294,7 @@ static int move_col(int col, enum direction dir)
 static int walk_nodes(int source, uint64_t history)
 {
     int longest = 0;
+    int ldest = -1;
 
     for (int dest = 0; dest < nvertices; ++dest)
     {
@@ -289,16 +309,21 @@ static int walk_nodes(int source, uint64_t history)
             }
 
             if (len > longest)
+            {
                 longest = len;
+                ldest = dest;
+            } 
         }
     }
-
+//    printf(" -> %d", ldest);
     return longest;
 }
 
 static int get_longest_path()
 {
+//    printf("0");
     int longest_path = walk_nodes(0, 0);
 
+//    printf("\n");
     return longest_path;
 }
