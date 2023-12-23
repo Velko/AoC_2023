@@ -24,8 +24,8 @@ enum direction
     NUM_DIRECTIONS
 };
 
-#define MAX_VERTICES    40
-
+#define MAX_VERTICES    36
+const char *vertice_labels = "AZBCDEFGHIJKLMNOPQRSTUVWXY0123456789";
 struct vertice
 {
     int row;
@@ -73,10 +73,10 @@ int main(void)
     assert(p != NULL);
     end_col = p - maze[end_row];
 
-    // printf("%dx%d\n", nrows, ncols);
-    // printf("(%d, %d) -> (%d, %d)\n", start_row, start_col, end_row, end_col);
-
-    //for (int r = 0; r < nrows; ++r) printf("%s\n", maze[r]);
+    #ifdef DEBUG_PRINT
+    printf("%dx%d\n", nrows, ncols);
+    printf("A (%d, %d) -> Z (%d, %d)\n", start_row, start_col, end_row, end_col);
+    #endif
 
     measure_graph(true);
 
@@ -158,11 +158,11 @@ static void follow_path(int row, int col, int old_row, int old_col, int source, 
         if (existing_vertice >= 0)
         {
             #ifdef DEBUG_PRINT
-            printf("ext %d(%d, %d) -> %d(%d, %d) = %d\n",
-                source,
+            printf("ext %c (%d, %d) -> %c (%d, %d) = %d\n",
+                vertice_labels[source],
                 vertices[source].row,
                 vertices[source].col,
-                existing_vertice,
+                vertice_labels[existing_vertice],
                 new_row, new_col,
                 distance);
             #endif
@@ -179,11 +179,12 @@ static void follow_path(int row, int col, int old_row, int old_col, int source, 
             vertices[nvertices].col = new_col;
             distances[source][nvertices] = distance;
             #ifdef DEBUG_PRINT
-            printf("add %d(%d, %d) -> %d(%d, %d) = %d\n",
-                source,
+            maze[new_row][new_col] = vertice_labels[nvertices];
+            printf("add %c (%d, %d) -> %c (%d, %d) = %d\n",
+                vertice_labels[source],
                 vertices[source].row,
                 vertices[source].col,
-                nvertices,
+                vertice_labels[nvertices],
                 new_row, new_col,
                 distance);
             #endif
@@ -206,6 +207,11 @@ static void measure_graph(bool respect_slopes)
     vertices[1].row = end_row;
     vertices[1].col = end_col;
     nvertices = 2;
+
+    #ifdef DEBUG_PRINT
+    maze[start_row][start_col] = vertice_labels[0];
+    maze[end_row][end_col] = vertice_labels[1];
+    #endif
 
     for (int vi = 0; vi < nvertices; ++vi)
     {
@@ -320,13 +326,13 @@ static void print_distance_matrix()
 {
     printf("    |");
     for (int d = 0; d < nvertices; ++d)
-        printf("%3d ", d);
+        printf("  %c ", vertice_labels[d]);
     printf("\n");
     printf("----+-----------------------------------\n");
 
     for (int s = 0; s < nvertices; ++s)
     {
-        printf("%3d |", s);
+        printf("  %c |", vertice_labels[s]);
         for (int d = 0; d < nvertices; ++d)
         {
             if (s != d)
