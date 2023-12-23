@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #define BUFFER_SIZE     150
 
@@ -78,9 +79,9 @@ int main(void)
 
 
 
-    //int result1 = get_longest_path();
+    int result1 = get_longest_path();
     // Result p1: 2170
-    //rintf("Result p1: %d\n", result1);
+    printf("Result p1: %d\n", result1);
 
     for (int r = 0; r < nrows; ++r) printf("%s\n", maze[r]);
 
@@ -138,9 +139,11 @@ static void follow_path(int row, int col, int old_row, int old_col, int source, 
         if (existing_vertice >= 0)
         {
             #ifdef DEBUG_PRINT
-            printf("ext (%d, %d) -> (%d, %d) = %d\n",
+            printf("ext %d(%d, %d) -> %d(%d, %d) = %d\n",
+                source,
                 vertices[source].row,
                 vertices[source].col,
+                existing_vertice,
                 new_row, new_col,
                 distance);
             #endif
@@ -155,11 +158,13 @@ static void follow_path(int row, int col, int old_row, int old_col, int source, 
             assert(nvertices < MAX_VERTICES);
             vertices[nvertices].row = new_row;
             vertices[nvertices].col = new_col;
-            distances[source][existing_vertice] = distance;
+            distances[source][nvertices] = distance;
             #ifdef DEBUG_PRINT
-            printf("add (%d, %d) -> (%d, %d) = %d\n",
+            printf("add %d(%d, %d) -> %d(%d, %d) = %d\n",
+                source,
                 vertices[source].row,
                 vertices[source].col,
+                nvertices,
                 new_row, new_col,
                 distance);
             maze[new_row][new_col] = nvertices + '0';
@@ -267,185 +272,33 @@ static int move_col(int col, enum direction dir)
     }
 }
 
-
-/* ------------ Dijkstra related stuff ------*/
-
-
-struct state
+static int walk_nodes(int source, uint64_t history)
 {
-    int row;
-    int col;
-    int distance;
-    enum direction dir;
-};
+    int longest = 0;
 
-int nqueue;
+    for (int dest = 0; dest < nvertices; ++dest)
+    {
+        if (history & (1ULL << dest))
+            continue;
+        if (distances[source][dest] > 0)
+        {
+            int len = distances[source][dest];
+            if (dest != 1)
+            {
+                len += walk_nodes(dest, history | (1ULL << source));
+            }
 
-int visited[BUFFER_SIZE][BUFFER_SIZE][NUM_DIRECTIONS];
+            if (len > longest)
+                longest = len;
+        }
+    }
 
-static void setup_queue();
-static void push_node(struct state *n);
-static void pop_node(struct state *top);
-static enum direction reverse(enum direction dir);
+    return longest;
+}
 
 static int get_longest_path()
 {
-    memset(visited, 0, sizeof(visited));
-    setup_queue();
-
-    struct state start =
-    {
-        .row = start_row,
-        .col = start_col,
-        .dir = DOWN,
-        .distance = 0,
-    };
-    push_node(&start);
-
-    int longest_path = 0;
-
-    while (nqueue > 0)
-    {
-        struct state node;
-
-        pop_node(&node);
-
-        if (node.row == end_row && node.col == end_col)
-        {
-            if (node.distance > longest_path)
-                longest_path = node.distance;
-            continue;
-        }
-
-        for (enum direction dir = UP; dir < NUM_DIRECTIONS; ++dir)
-        {
-            if (reverse(node.dir) == dir)
-                continue;
-            switch (maze[node.row][node.col])
-            {
-            case '>':
-                if (dir != RIGHT) continue;
-                break;
-            case '<':
-                if (dir != LEFT) continue;
-                break;
-            case '^':
-                if (dir != UP) continue;
-                break;
-            case 'v':
-                if (dir != DOWN) continue;
-                break;
-            case '.':
-                // just for control
-                break;
-            default:
-                printf("WTF %c\n", maze[node.row][node.col]);
-                exit(1);
-                break;
-            }
-
-            struct state new_node;
-            new_node.row = move_row(node.row, dir);
-            new_node.col = move_col(node.col, dir);
-            new_node.dir = dir;
-
-            if (new_node.row < 0 || new_node.row >= nrows || new_node.col < 0 || new_node.col >= ncols)
-                continue;
-
-            switch (maze[new_node.row][new_node.col])
-            {
-            case '.':
-            case '^':
-            case 'v':
-            case '>':
-            case '<':
-                break;
-            default:
-                continue;
-            }
-
-            new_node.distance = node.distance + 1;
-
-            int *v = &visited[new_node.row][new_node.col][dir];
-
-            if (new_node.distance > *v)
-            {
-                *v = new_node.distance;
-                push_node(&new_node);
-            }
-        }
-    }
+    int longest_path = walk_nodes(0, 0);
 
     return longest_path;
-}
-
-static enum direction reverse(enum direction dir)
-{
-    switch (dir)
-    {
-    case UP:
-        return DOWN;
-    case DOWN:
-        return UP;
-    case LEFT:
-        return RIGHT;
-    case RIGHT:
-        return LEFT;
-    default:
-        return dir;
-    }
-}
-
-/* Implement priority queue as buckets of ring buffers */
-
-#define MAX_ITEMS_BUCKET             2048 /* determined experimentally */
-#define MAX_BUCKETS                  (BUFFER_SIZE * BUFFER_SIZE)
-
-struct state_bucket
-{
-    int read_idx;
-    int write_idx;
-    struct state items[MAX_ITEMS_BUCKET];
-};
-
-struct state_bucket queue[MAX_BUCKETS];
-
-static void setup_queue()
-{
-    memset(queue, 0, sizeof(queue));
-    nqueue = 0;
-}
-
-static void pop_node(struct state *top)
-{
-    int i;
-    for (i = MAX_BUCKETS-1; i >= 0; --i)
-    {
-        if (queue[i].write_idx > queue[i].read_idx)
-        {
-            int idx = queue[i].read_idx % MAX_ITEMS_BUCKET;
-            *top = queue[i].items[idx];
-            ++queue[i].read_idx;
-            --nqueue;
-            return;
-        }
-    }
-
-    assert(i < MAX_BUCKETS);
-}
-
-static void push_node(struct state *n)
-{
-    assert(n->distance < MAX_BUCKETS);
-
-    struct state_bucket *bucket = queue + n->distance;
-
-    // check of not full
-    assert(bucket->write_idx - bucket->read_idx < MAX_ITEMS_BUCKET);
-
-    int idx = bucket->write_idx % MAX_ITEMS_BUCKET;
-
-    bucket->items[idx] = *n;
-    ++bucket->write_idx;
-    ++nqueue;
 }
