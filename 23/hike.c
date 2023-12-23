@@ -38,6 +38,7 @@ static int get_longest_path();
 static int move_row(int row, enum direction dir);
 static int move_col(int col, enum direction dir);
 static int num_exits(int row, int col);
+static int measure_graph();
 
 int main(void)
 {
@@ -70,20 +71,8 @@ int main(void)
 
     //for (int r = 0; r < nrows; ++r) printf("%s\n", maze[r]);
 
-    for (int r = 0; r < nrows; ++r)
-    {
-        for (int c = 0; c < ncols; ++c)
-        {
-            if (maze[r][c] != '#')
-            {
-                int nx = num_exits(r, c);
-                if (nx > 2)
-                    maze[r][c] = nx +  '0';
-                else
-                    maze[r][c] = '.';
-            }
-        }
-    }
+    measure_graph();
+
 
 
     //int result1 = get_longest_path();
@@ -94,6 +83,103 @@ int main(void)
 
     return 0;
 }
+
+static int find_vertice(int row, int col);
+
+static void follow_path(int row, int col, int old_row, int old_col, int source, int distance)
+{
+    for(;;)
+    {
+        int new_row, new_col;
+        for (enum direction dir = UP; dir < NUM_DIRECTIONS; ++dir)
+        {
+            new_row = move_row(row, dir);
+            new_col = move_col(col, dir);
+
+            if (new_row < 0 || new_row >= nrows || new_col < 0 || new_col >= ncols)
+                continue;
+
+            if (maze[new_row][new_col] == '#')
+                continue;
+
+            if (new_row == old_row && new_col == old_col)
+                continue;
+            break;
+        }
+
+        ++distance;
+
+        int existing_vertice = find_vertice(new_row, new_col);
+        if (existing_vertice >= 0)
+        {
+            printf("ext (%d, %d) -> (%d, %d) = %d\n",
+                vertices[source].row,
+                vertices[source].col,
+                new_row, new_col,
+                distance);
+            return;
+        }
+
+        int ndirs = num_exits(new_row, new_col);
+
+        if (ndirs > 2)
+        {
+            assert(nvertices < MAX_VERTICES);
+            vertices[nvertices].row = new_row;
+            vertices[nvertices].col = new_col;
+            printf("add (%d, %d) -> (%d, %d) = %d\n",
+                vertices[source].row,
+                vertices[source].col,
+                new_row, new_col,
+                distance);
+            maze[new_row][new_col] = nvertices + '0';
+            ++nvertices;
+            return;
+        }
+        old_row = row;
+        old_col = col;
+        row = new_row;
+        col = new_col;
+    }
+}
+
+
+static int measure_graph()
+{
+    memset(distances, 0, sizeof(distances));
+
+    vertices[0].row = start_row;
+    vertices[0].col = start_col;
+    vertices[1].row = end_row;
+    vertices[1].col = end_col;
+    nvertices = 2;
+
+    maze[start_row][start_col] = '0';
+    maze[end_row][end_col] = '1';
+
+    for (int vi = 0; vi < nvertices; ++vi)
+    {
+        int row = vertices[vi].row;
+        int col = vertices[vi].col;
+
+        for (enum direction dir = UP; dir < NUM_DIRECTIONS; ++dir)
+        {
+            int new_row = move_row(row, dir);
+            int new_col = move_col(col, dir);
+
+            if (new_row < 0 || new_row >= nrows || new_col < 0 || new_col >= ncols)
+                continue;
+
+            if (maze[new_row][new_col] == '#')
+                continue;
+
+            follow_path(new_row, new_col, row, col, vi, 1);
+        }
+    }
+
+    return 0;
+}
+
 
 static int num_exits(int row, int col)
 {
@@ -111,6 +197,17 @@ static int num_exits(int row, int col)
     }
 
     return nexits;
+}
+
+static int find_vertice(int row, int col)
+{
+    for (int v = 0; v < nvertices; ++v)
+    {
+        if (vertices[v].row == row && vertices[v].col == col)
+            return v;
+    }
+
+    return -1;
 }
 
 
