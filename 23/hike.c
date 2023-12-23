@@ -6,6 +6,9 @@
 
 #define BUFFER_SIZE     150
 
+#define DEBUG_PRINT
+#define PART1
+
 char maze[BUFFER_SIZE][BUFFER_SIZE];
 int nrows, ncols;
 
@@ -91,8 +94,27 @@ static void follow_path(int row, int col, int old_row, int old_col, int source, 
     for(;;)
     {
         int new_row, new_col;
-        for (enum direction dir = UP; dir < NUM_DIRECTIONS; ++dir)
+        enum direction dir;
+        for (dir = UP; dir < NUM_DIRECTIONS; ++dir)
         {
+            #ifdef PART1
+            switch (maze[row][col])
+            {
+            case '>':
+                if (dir != RIGHT) continue;
+                break;
+            case '<':
+                if (dir != LEFT) continue;
+                break;
+            case '^':
+                if (dir != UP) continue;
+                break;
+            case 'v':
+                if (dir != DOWN) continue;
+                break;
+            }
+            #endif
+
             new_row = move_row(row, dir);
             new_col = move_col(col, dir);
 
@@ -107,16 +129,22 @@ static void follow_path(int row, int col, int old_row, int old_col, int source, 
             break;
         }
 
+        if (dir == NUM_DIRECTIONS)
+            return;
+
         ++distance;
 
         int existing_vertice = find_vertice(new_row, new_col);
         if (existing_vertice >= 0)
         {
+            #ifdef DEBUG_PRINT
             printf("ext (%d, %d) -> (%d, %d) = %d\n",
                 vertices[source].row,
                 vertices[source].col,
                 new_row, new_col,
                 distance);
+            #endif
+            distances[source][existing_vertice] = distance;
             return;
         }
 
@@ -127,12 +155,15 @@ static void follow_path(int row, int col, int old_row, int old_col, int source, 
             assert(nvertices < MAX_VERTICES);
             vertices[nvertices].row = new_row;
             vertices[nvertices].col = new_col;
+            distances[source][existing_vertice] = distance;
+            #ifdef DEBUG_PRINT
             printf("add (%d, %d) -> (%d, %d) = %d\n",
                 vertices[source].row,
                 vertices[source].col,
                 new_row, new_col,
                 distance);
             maze[new_row][new_col] = nvertices + '0';
+            #endif
             ++nvertices;
             return;
         }
@@ -142,7 +173,6 @@ static void follow_path(int row, int col, int old_row, int old_col, int source, 
         col = new_col;
     }
 }
-
 
 static int measure_graph()
 {
