@@ -8,7 +8,6 @@
 #define BUFFER_SIZE     150
 
 //#define DEBUG_PRINT
-//#define PART1
 
 char maze[BUFFER_SIZE][BUFFER_SIZE];
 int nrows, ncols;
@@ -42,7 +41,11 @@ static int get_longest_path();
 static int move_row(int row, enum direction dir);
 static int move_col(int col, enum direction dir);
 static int num_exits(int row, int col);
-static int measure_graph();
+static void measure_graph(bool respect_slopes);
+
+#ifdef DEBUG_PRINT
+static void print_distance_matrix();
+#endif
 
 int main(void)
 {
@@ -75,33 +78,26 @@ int main(void)
 
     //for (int r = 0; r < nrows; ++r) printf("%s\n", maze[r]);
 
-    measure_graph();
+    measure_graph(true);
 
+    #ifdef DEBUG_PRINT
+    print_distance_matrix();
+    #endif
 
-    printf("    |");
-    for (int d = 0; d < nvertices; ++d)
-        printf("%3d ", d);
-    printf("\n");
-    printf("----+-----------------------------------\n");
-
-    for (int s = 0; s < nvertices; ++s)
-    {
-        printf("%3d |", s);
-        for (int d = 0; d < nvertices; ++d)
-        {
-            if (s != d)
-                printf("%3d ", distances[s][d]);
-            else
-                printf("  * ");
-        }
-        printf("\n");
-    }
-
-
-    int result = get_longest_path();
+    int result1 = get_longest_path();
     // Result p1: 2170
+    printf("Result p1: %d\n", result1);
+
+
+    measure_graph(false);
+
+    #ifdef DEBUG_PRINT
+    print_distance_matrix();
+    #endif
+
+    int result2 = get_longest_path();
     // Result p2: 6502
-    printf("Result: %d\n", result);
+    printf("Result p2: %d\n", result2);
 
     #ifdef DEBUG_PRINT
     for (int r = 0; r < nrows; ++r) printf("%s\n", maze[r]);
@@ -112,7 +108,7 @@ int main(void)
 
 static int find_vertice(int row, int col);
 
-static void follow_path(int row, int col, int old_row, int old_col, int source, int distance)
+static void follow_path(int row, int col, int old_row, int old_col, int source, int distance, bool respect_slopes)
 {
     for(;;)
     {
@@ -120,23 +116,24 @@ static void follow_path(int row, int col, int old_row, int old_col, int source, 
         enum direction dir;
         for (dir = UP; dir < NUM_DIRECTIONS; ++dir)
         {
-            #ifdef PART1
-            switch (maze[row][col])
+            if (respect_slopes)
             {
-            case '>':
-                if (dir != RIGHT) continue;
-                break;
-            case '<':
-                if (dir != LEFT) continue;
-                break;
-            case '^':
-                if (dir != UP) continue;
-                break;
-            case 'v':
-                if (dir != DOWN) continue;
-                break;
+                switch (maze[row][col])
+                {
+                case '>':
+                    if (dir != RIGHT) continue;
+                    break;
+                case '<':
+                    if (dir != LEFT) continue;
+                    break;
+                case '^':
+                    if (dir != UP) continue;
+                    break;
+                case 'v':
+                    if (dir != DOWN) continue;
+                    break;
+                }
             }
-            #endif
 
             new_row = move_row(row, dir);
             new_col = move_col(col, dir);
@@ -189,7 +186,6 @@ static void follow_path(int row, int col, int old_row, int old_col, int source, 
                 nvertices,
                 new_row, new_col,
                 distance);
-            //maze[new_row][new_col] = nvertices + '0';
             #endif
             ++nvertices;
             return;
@@ -201,7 +197,7 @@ static void follow_path(int row, int col, int old_row, int old_col, int source, 
     }
 }
 
-static int measure_graph()
+static void measure_graph(bool respect_slopes)
 {
     memset(distances, 0, sizeof(distances));
 
@@ -210,9 +206,6 @@ static int measure_graph()
     vertices[1].row = end_row;
     vertices[1].col = end_col;
     nvertices = 2;
-
-    //maze[start_row][start_col] = '0';
-    //maze[end_row][end_col] = '1';
 
     for (int vi = 0; vi < nvertices; ++vi)
     {
@@ -230,11 +223,9 @@ static int measure_graph()
             if (maze[new_row][new_col] == '#')
                 continue;
 
-            follow_path(new_row, new_col, row, col, vi, 1);
+            follow_path(new_row, new_col, row, col, vi, 1, respect_slopes);
         }
     }
-
-    return 0;
 }
 
 
@@ -294,10 +285,9 @@ static int move_col(int col, enum direction dir)
     }
 }
 
-int longest_path = 0;
-
-static void walk_nodes(int source, int dist_so_far, uint64_t history)
+static int walk_nodes(int source, int dist_so_far, uint64_t history)
 {
+    int longest = 0;
     for (int dest = 0; dest < nvertices; ++dest)
     {
         if (history & (1ULL << dest))
@@ -307,21 +297,44 @@ static void walk_nodes(int source, int dist_so_far, uint64_t history)
             int len = distances[source][dest];
             if (dest == 1)
             {
-                len += dist_so_far;
-                //printf("%d\n", len + dist_so_far);
-                if (len > longest_path)
-                    longest_path = len;
-                return;
+                return dist_so_far + len;
             }
-            walk_nodes(dest, dist_so_far + len, history | (1ULL << source));
+            int sub_len = walk_nodes(dest, dist_so_far + len, history | (1ULL << source));
+            if (sub_len > longest)
+                longest = sub_len;
         }
     }
+
+    return longest;
 }
 
 
 static int get_longest_path()
 {
-    walk_nodes(0, 0, 0);
-
-    return longest_path;
+    return walk_nodes(0, 0, 0);
 }
+
+
+#ifdef DEBUG_PRINT
+static void print_distance_matrix()
+{
+    printf("    |");
+    for (int d = 0; d < nvertices; ++d)
+        printf("%3d ", d);
+    printf("\n");
+    printf("----+-----------------------------------\n");
+
+    for (int s = 0; s < nvertices; ++s)
+    {
+        printf("%3d |", s);
+        for (int d = 0; d < nvertices; ++d)
+        {
+            if (s != d)
+                printf("%3d ", distances[s][d]);
+            else
+                printf("  * ");
+        }
+        printf("\n");
+    }
+}
+#endif
