@@ -7,6 +7,7 @@
 #define BUFFER_SIZE     256
 
 #define TEST_DATA
+#define DEBUG_PRINT
 
 #ifdef TEST_DATA
 #define TEST_AREA_MIN         7
@@ -72,6 +73,7 @@ int main(void)
         }
     }
 
+    // Wrong Result p1: 14609 (too low)
     printf("Result: %d\n", total);
 
     
@@ -97,11 +99,23 @@ static void parse_line(const char *line)
 }
 
 
+static long floor_div(long dividend, long divisor, bool *had_reminder)
+{
+    long result = dividend / divisor;
+    *had_reminder = (dividend % divisor) != 0;
+    if (result < 0 && *had_reminder)
+        --result;
+
+    return result;
+}
+
 static bool calc_intersect(struct hail *a, struct hail *b)
 {
+    #ifdef DEBUG_PRINT
     printf("\n");
     print_hail(a);
     print_hail(b);
+    #endif
 
 
     long dividend_b = (b->position.y - a->position.y) * a->velocity.x - (b->position.x - a->position.x) * a->velocity.y;
@@ -112,29 +126,38 @@ static bool calc_intersect(struct hail *a, struct hail *b)
 
     if (divisor_b == 0) // parallel
     {
+        #ifdef DEBUG_PRINT
         printf("Parallel\n");
+        #endif
         return false;
     }
 
     if ((dividend_b > 0 && divisor_b < 0) || (dividend_b < 0 && divisor_b > 0)) // signs differ, intersected in past
     {
+        #ifdef DEBUG_PRINT
         printf("Past B\n");
+        #endif
         return false;
     }
 
     if ((dividend_a > 0 && divisor_a < 0) || (dividend_a < 0 && divisor_a > 0)) // signs differ, intersected in past
     {
+        #ifdef DEBUG_PRINT
         printf("Past A\n");
+        #endif
         return false;
     }
 
-    double intersect_x = b->position.x + (b->velocity.x * dividend_b / (double)divisor_b);
-    double intersect_y = b->position.y + (b->velocity.y * dividend_b / (double)divisor_b);
+    bool rem_x, rem_y;
+    long intersect_x = b->position.x + floor_div(b->velocity.x * dividend_b, divisor_b, &rem_x);
+    long intersect_y = b->position.y + floor_div(b->velocity.y * dividend_b, divisor_b, &rem_y);
 
-    bool fits = intersect_x >= TEST_AREA_X_MIN && intersect_x <= TEST_AREA_X_MAX
-        && intersect_y >= TEST_AREA_Y_MIN && intersect_y <= TEST_AREA_Y_MAX;
+    bool fits = intersect_x >= TEST_AREA_X_MIN && (intersect_x < TEST_AREA_X_MAX || (intersect_x == TEST_AREA_X_MAX && !rem_x))
+             && intersect_y >= TEST_AREA_Y_MIN && (intersect_y < TEST_AREA_Y_MAX || (intersect_y == TEST_AREA_Y_MAX && !rem_y));
 
-    printf("Intersects %s at %g, %g\n", fits ? "inside" : "outside", intersect_x, intersect_y);
+    #ifdef DEBUG_PRINT
+    printf("Intersects %s at %ld (%d), %ld (%d)\n", fits ? "inside" : "outside", intersect_x, rem_x, intersect_y, rem_y);
+    #endif
 
     return fits;
 }
