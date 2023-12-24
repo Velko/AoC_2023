@@ -1,0 +1,125 @@
+\documentclass{article}
+\begin{document}
+
+
+Trajectories intersect when $X_a = X_b$ and $Y_a = Y_b$
+
+Positions for each hailstone can be calculated:
+
+\begin{displaymath}
+    X = X_0 + V_x \times t
+\end{displaymath}
+\begin{displaymath}
+    Y = Y_0 + V_y \times t
+\end{displaymath}
+
+Then:
+\begin{equation}
+    X_{a0} + V_{ax} \times t_a = X_{b0} + V_{bx} \times t_b
+\end{equation}
+\begin{equation}
+    Y_{a0} + V_{ay} \times t_a = Y_{b0} + V_{by} \times t_b
+\end{equation}
+
+Rearange $V \times t$
+\begin{displaymath}
+    V_{ax} \times t_a = X_{b0} + V_{bx} \times t_b - X_{a0}
+\end{displaymath}
+\begin{displaymath}
+    V_{ay} \times t_a = Y_{b0} + V_{by} \times t_b - Y_{a0}
+\end{displaymath}
+
+Extract $t_a$
+\begin{displaymath}
+    t_a = \frac{X_{b0} + V_{bx} \times t_b - X_{a0}}{V_{ax}}
+\end{displaymath}
+
+\begin{displaymath}
+    t_a = \frac{Y_{b0} + V_{by} \times t_b - Y_{a0}}{V_{ay}}
+\end{displaymath}
+
+Both sides
+\begin{displaymath}
+    \frac{X_{b0} + V_{bx} \times t_b - X_{a0}}{V_{ax}} = \frac{Y_{b0} + V_{by} \times t_b - Y_{a0}}{V_{ay}}
+\end{displaymath}
+
+Rearange fractions
+\begin{displaymath}
+    \frac{X_{b0} - X_{a0}}{V_{ax}} + \frac{V_{bx} \times t_b}{V_{ax}} = \frac{Y_{b0} - Y_{a0}}{V_{ay}} + \frac{V_{by} \times t_b}{V_{ay}}
+\end{displaymath}
+    
+
+Move consts to right, vars to left
+\begin{displaymath}
+    \frac{V_{bx} \times t_b}{V_{ax}} - \frac{V_{by} \times t_b}{V_{ay}} = \frac{Y_{b0} - Y_{a0}}{V_{ay}} - \frac{X_{b0} - X_{a0}}{V_{ax}}
+\end{displaymath}
+    
+
+Extact $t_b$
+\begin{displaymath}
+    t_b \times (\frac{V_{bx}}{V_{ax}} - \frac{V_{by}}{V_{ay}}) = \frac{Y_{b0} - Y_{a0}}{V_{ay}} - \frac{X_{b0} - X_{a0}}{V_{ax}}
+\end{displaymath}
+
+
+Re-arrange subtractions:
+\begin{displaymath}
+    t_b \times (\frac{V_{bx} \times V_{ay} - V_{by} \times V_{ax}}{V_{ax} \times V_{ay}}) = \frac{(Y_{b0} - Y_{a0}) \times V_{ax} - (X_{b0} - X_{a0}) \times V_{ay}}{V_{ax} \times V_{ay}}
+\end{displaymath}
+
+Extact $t_b$
+\begin{displaymath}
+    t_b = \frac{\frac{(Y_{b0} - Y_{a0}) \times V_{ax} - (X_{b0} - X_{a0}) \times V_{ay}}{V_{ax} \times V_{ay}}}{\frac{V_{bx} \times V_{ay} - V_{by} \times V_{ax}}{V_{ax} \times V_{ay}}}
+\end{displaymath}
+
+Simplify
+\begin{equation}
+    t_b = \frac{(Y_{b0} - Y_{a0}) \times V_{ax} - (X_{b0} - X_{a0}) \times V_{ay}}{V_{bx} \times V_{ay} - V_{by} \times V_{ax}}
+\end{equation}
+
+Rearranging (1) and (2) for b:
+\begin{displaymath}
+    V_{bx} \times t_b = X_{a0} + V_{ax} \times t_a - X_{b0}
+\end{displaymath}
+\begin{displaymath}
+    V_{by} \times t_b = Y_{a0} + V_{ay} \times t_a - Y_{b0}
+\end{displaymath}
+
+Which is symmetric, so the expression for $t_a$ must be
+\begin{displaymath}
+    t_a = \frac{(Y_{a0} - Y_{b0}) \times V_{bx} - (X_{a0} - X_{b0}) \times V_{by}}{V_{ax} \times V_{by} - V_{ay} \times V_{bx}}
+\end{displaymath}
+
+Programmatically it would probably be easier to just swap a and b. Anyway, we're only interested in situations when $t_a > 0$ and $t_b > 0$.
+Additionally we're interested ony on $V_{bx} \times V_{ay} \neq V_{by} \times V_{ax}$, because otherwise these are parallel lines.
+
+To determine if there will be an intersection at some point, we should calculate both divisor and divident and compare their signs.
+
+Additional requirement was to determine if they will intersect inside some range of coordinates, so we have to actually calculate the
+point of intersection. As there are large numbers and I'd like to avoid floating-point imprecisions as much as possible, let's try to plug the
+formula for $t_b$ into the coordinate calculations and see if it could be simplified.
+
+
+
+\begin{displaymath}
+    X_b = X_{0b} + V_{bx} \times t_b
+\end{displaymath}
+
+
+\begin{displaymath}
+    X_b = X_{0b} + V_{bx} \times \frac{(Y_{b0} - Y_{a0}) \times V_{ax} - (X_{b0} - X_{a0}) \times V_{ay}}{V_{bx} \times V_{ay} - V_{by} \times V_{ax}}
+\end{displaymath}
+
+
+Ok, it does not look like it can be simplified much, let's only multiply the divident with $V_{bx}$ first.
+
+\begin{displaymath}
+    X_b = X_{0b} + \frac{V_{bx} \times ((Y_{b0} - Y_{a0}) \times V_{ax} - (X_{b0} - X_{a0}) \times V_{ay})}{V_{bx} \times V_{ay} - V_{by} \times V_{ax}}
+\end{displaymath}
+
+
+
+
+
+
+
+\end{document}
