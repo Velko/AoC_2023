@@ -6,8 +6,8 @@
 
 #define BUFFER_SIZE     256
 
-#define TEST_DATA
-#define DEBUG_PRINT
+//#define TEST_DATA
+//#define DEBUG_PRINT
 
 #ifdef TEST_DATA
 #define TEST_AREA_MIN         7
@@ -74,6 +74,7 @@ int main(void)
     }
 
     // Wrong Result p1: 14609 (too low)
+    // Result p1: 16018 (calculated in Python)
     printf("Result: %d\n", total);
 
     
@@ -154,6 +155,14 @@ static bool calc_intersect(struct hail *a, struct hail *b)
 
     bool fits = intersect_x >= TEST_AREA_X_MIN && (intersect_x < TEST_AREA_X_MAX || (intersect_x == TEST_AREA_X_MAX && !rem_x))
              && intersect_y >= TEST_AREA_Y_MIN && (intersect_y < TEST_AREA_Y_MAX || (intersect_y == TEST_AREA_Y_MAX && !rem_y));
+
+    if (intersect_x >= TEST_AREA_X_MIN - 5 && intersect_x <= TEST_AREA_X_MAX + 5
+     && intersect_y >= TEST_AREA_Y_MIN - 5 && intersect_y <= TEST_AREA_Y_MAX + 5
+     && !fits)
+     {
+        printf("Close: (%ld, %ld)\n", intersect_x, intersect_y);
+     }
+
 
     #ifdef DEBUG_PRINT
     printf("Intersects %s at %ld (%d), %ld (%d)\n", fits ? "inside" : "outside", intersect_x, rem_x, intersect_y, rem_y);
