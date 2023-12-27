@@ -1,8 +1,14 @@
 \documentclass{article}
 \usepackage{amsmath}
+
+\makeatletter
+\renewcommand*\env@matrix[1][*\c@MaxMatrixCols c]{%
+  \hskip -\arraycolsep
+  \let\@ifnextchar\new@ifnextchar
+  \array{#1}}
+\makeatother
+
 \begin{document}
-
-
 
 \section{Part 1 - XY trajectory intersection}
 
@@ -128,9 +134,118 @@ The perfect solution calls for math utilizing longer than 64-bit integers and so
 the border.
 
 
+\subsection{Solve by Row reduction}
+
+The solution above works, but getting to that involves a lot of manual formula conversions. It worked but I'd like to practice a little
+by solving it in a more computer-oriented way. I'm considering it as a practice for \ref{part-2}.
+
+Take (\ref{eq:1}) again and re-arrange it to a typical layout of \emph{System of Linear equations}:
+
+\begin{displaymath}
+    \begin{cases}
+        V_{ax} \times t_a - V_{bx} \times t_b = X_{b0} - X_{a0} \\
+        V_{ay} \times t_a - V_{by} \times t_b = Y_{b0} - Y_{a0}
+    \end{cases}
+\end{displaymath}
+
+This can be rewritten in \emph{Augmented matrix} form:
+
+\begin{displaymath}
+\begin{bmatrix}[cc|c]
+    V_{ax} & - V_{bx} & X_{b0} - X_{a0} \\
+    V_{ay} & - V_{by} & Y_{b0} - Y_{a0}
+\end{bmatrix}
+\end{displaymath}
+
+With all coefficients plugged in, this should be calculated numerically by a program.
+
+Let's practice on sample data, to understand the algorithm better:
+
+\begin{itemize}
+\item 19, 13, 30 @ -2, 1, -2
+\item 18, 19, 22 @ -1, -1, -2
+\end{itemize}
+
+\begin{displaymath}
+    \begin{bmatrix}[cc|c]
+        -2 & - -1 & 18 - 19 \\
+         1 & - -1 & 19 - 13
+    \end{bmatrix}
+\end{displaymath}
+
+
+\begin{displaymath}
+    \begin{bmatrix}[cc|c]
+        -2 & 1 & -1 \\
+         1 & 1 &  6
+    \end{bmatrix}
+\end{displaymath}
+
+Divide 1-st row by -2:
+
+\begin{displaymath}
+    \begin{bmatrix}[cc|c]
+         1 & -\frac{1}{2} & \frac{1}{2} \\
+         1 & 1 &  6
+    \end{bmatrix}
+\end{displaymath}
+
+Subtract 1-st row (multiplied by 1) from the 2nd row:
+
+
+\begin{displaymath}
+    \begin{bmatrix}[cc|c]
+         1 & -\frac{1}{2} & \frac{1}{2} \\
+         0 & 1\frac{1}{2} &  5\frac{1}{2}
+    \end{bmatrix}
+\end{displaymath}
+
+
+Divide 2nd row by 1$\frac{1}{2}$
+
+\begin{displaymath}
+    \begin{bmatrix}[cc|c]
+         1 & -\frac{1}{2} & \frac{1}{2} \\
+         0 & 1 &  \frac{11}{3}
+    \end{bmatrix}
+\end{displaymath}
+
+
+Subtract 2nd row multiplied by -$\frac{1}{2}$ from the first:
+
+\begin{displaymath}
+    \begin{bmatrix}[cc|c]
+         1 & 0 & \frac{7}{3} \\
+         0 & 1 &  \frac{11}{3}
+    \end{bmatrix}
+\end{displaymath}
+
+Here we get that $t_a = \frac{7}{3}$ and $t_b = \frac{11}{3}$.
+
+Plugging $t_a$ into coordinate calculations for \emph{A}:
+
+\begin{displaymath}
+    \begin{cases}
+    X = 19 + (-2 * \frac{7}{3}) = 14.333 \\
+    Y = 13 + (1 * \frac{7}{3}) = 15.333
+    \end{cases}
+\end{displaymath}
+
+
+Do the same with $t_b$:
+
+\begin{displaymath}
+    \begin{cases}
+    X = 18 + (-1 * \frac{11}{3}) = 14.333 \\
+    Y = 19 + (-1 * \frac{11}{3}) = 15.333
+    \end{cases}
+\end{displaymath}
+
+This proves that the algorithm works, it only needs to be coded.
 
 
 
+\section{Part 2 - Impact trajectory in 3D} \label{part-2}
 
 
 
