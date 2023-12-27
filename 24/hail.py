@@ -8,13 +8,18 @@ TEST_AREA_MAX = 400000000000000
 # TEST_AREA_MIN =         7
 # TEST_AREA_MAX  =        27
 
+POSITION=0
+VELOCITY=1
+
+X=0
+Y=1
 
 def compare_hail(a, b):
-    dividend_b = (b[0][1] - a[0][1]) * a[1][0] - (b[0][0] - a[0][0]) * a[1][1];
-    divisor_b = b[1][0] * a[1][1] - b[1][1] * a[1][0]
+    dividend_b = (b[POSITION][Y] - a[POSITION][Y]) * a[VELOCITY][X] - (b[POSITION][X] - a[POSITION][X]) * a[VELOCITY][Y];
+    divisor_b = b[VELOCITY][X] * a[VELOCITY][Y] - b[VELOCITY][Y] * a[VELOCITY][X]
 
-    dividend_a = (a[0][1] - b[0][1]) * b[1][0] - (a[0][0] - b[0][0]) * b[1][1];
-    divisor_a = a[1][0] * b[1][1] - a[1][1] * b[1][0]
+    dividend_a = (a[POSITION][Y] - b[POSITION][Y]) * b[VELOCITY][X] - (a[POSITION][X] - b[POSITION][X]) * b[VELOCITY][Y];
+    divisor_a = a[VELOCITY][X] * b[VELOCITY][Y] - a[VELOCITY][Y] * b[VELOCITY][X]
 
     if divisor_b == 0:
         return False
@@ -25,8 +30,8 @@ def compare_hail(a, b):
     if (dividend_a > 0 and divisor_a < 0) or (dividend_a < 0 and divisor_a > 0): # signs differ, intersected in past
         return False
 
-    intersect_x = b[0][0] + b[1][0] * dividend_b / divisor_b
-    intersect_y = b[0][1] + b[1][1] * dividend_b / divisor_b
+    intersect_x = b[POSITION][X] + b[VELOCITY][X] * dividend_b / divisor_b
+    intersect_y = b[POSITION][Y] + b[VELOCITY][Y] * dividend_b / divisor_b
 
     fits = intersect_x >= TEST_AREA_MIN and intersect_x <= TEST_AREA_MAX \
              and intersect_y >= TEST_AREA_MIN and intersect_y <= TEST_AREA_MAX
