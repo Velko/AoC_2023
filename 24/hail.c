@@ -44,7 +44,10 @@ int nhailstones;
 
 static void parse_line(const char *line);
 static bool calc_intersect(struct hail *a, struct hail *b);
+
+#ifdef DEBUG_PRINT
 static void print_hail(struct hail *a);
+#endif
 
 int main(void)
 {
@@ -73,11 +76,9 @@ int main(void)
         }
     }
 
-    // Wrong Result p1: 14609 (too low)
-    // Result p1: 16018 (calculated in Python)
-    printf("Result: %d\n", total);
+    // Result p1: 16018
+    printf("Result p1: %d\n", total);
 
-    
     return 0;
 }
 
@@ -97,17 +98,6 @@ static void parse_line(const char *line)
     assert(n == 6);
 
     ++nhailstones;
-}
-
-
-static long floor_div(long dividend, long divisor, bool *had_reminder)
-{
-    long result = dividend / divisor;
-    *had_reminder = (dividend % divisor) != 0;
-    if (result < 0 && *had_reminder)
-        --result;
-
-    return result;
 }
 
 static bool calc_intersect(struct hail *a, struct hail *b)
@@ -149,20 +139,14 @@ static bool calc_intersect(struct hail *a, struct hail *b)
         return false;
     }
 
-    bool rem_x, rem_y;
-    long intersect_x = b->position.x + floor_div(b->velocity.x * dividend_b, divisor_b, &rem_x);
-    long intersect_y = b->position.y + floor_div(b->velocity.y * dividend_b, divisor_b, &rem_y);
+    // Multiplying velocities with dividend_b first sometimes results in an (long) integer
+    // overflow. Making division first (calculating time) may lose some precision but
+    // appears to give correct result in the end.
+    double intersect_x = b->position.x + b->velocity.x * (dividend_b / (double)divisor_b);
+    double intersect_y = b->position.y + b->velocity.y * (dividend_b / (double)divisor_b);
 
-    bool fits = intersect_x >= TEST_AREA_X_MIN && (intersect_x < TEST_AREA_X_MAX || (intersect_x == TEST_AREA_X_MAX && !rem_x))
-             && intersect_y >= TEST_AREA_Y_MIN && (intersect_y < TEST_AREA_Y_MAX || (intersect_y == TEST_AREA_Y_MAX && !rem_y));
-
-    if (intersect_x >= TEST_AREA_X_MIN - 5 && intersect_x <= TEST_AREA_X_MAX + 5
-     && intersect_y >= TEST_AREA_Y_MIN - 5 && intersect_y <= TEST_AREA_Y_MAX + 5
-     && !fits)
-     {
-        printf("Close: (%ld, %ld)\n", intersect_x, intersect_y);
-     }
-
+    bool fits = intersect_x >= TEST_AREA_X_MIN && intersect_x <= TEST_AREA_X_MAX
+             && intersect_y >= TEST_AREA_Y_MIN && intersect_y <= TEST_AREA_Y_MAX;
 
     #ifdef DEBUG_PRINT
     printf("Intersects %s at %ld (%d), %ld (%d)\n", fits ? "inside" : "outside", intersect_x, rem_x, intersect_y, rem_y);
@@ -171,6 +155,7 @@ static bool calc_intersect(struct hail *a, struct hail *b)
     return fits;
 }
 
+#ifdef DEBUG_PRINT
 static void print_hail(struct hail *h)
 {
     printf("%ld, %ld, %ld @ %ld, %ld, %ld\n",
@@ -181,3 +166,4 @@ static void print_hail(struct hail *h)
         h->velocity.y,
         h->velocity.z);
 }
+#endif
