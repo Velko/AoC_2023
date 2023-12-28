@@ -247,6 +247,74 @@ This proves that the algorithm works, it only needs to be coded.
 
 \section{Part 2 - Impact trajectory in 3D} \label{part-2}
 
+It is known that there is a straight line trajectory that collides with all of the hailstones.
+
+The coordinate calculations for straight line trajectories remains same as in Part 1, just we have to also consider Z coordinate.
+
+\begin{displaymath}
+    \begin{cases}
+        X = X_{0} + V_{x} \\
+        Y = Y_{0} + V_{y} \\
+        Z = Z_{0} + V_{z}
+    \end{cases}
+\end{displaymath}
+
+At impact with hailstone A, the coordinates of the rock ($X_r$, $Y_r$ and $Z_r$) should be equal to the coordinates of hailstone ($X_a$, $Y_a$ and $Z_a$)
+at same moment of time $t_a$.
+
+\begin{equation}
+    \begin{cases}
+        X_{r0} + V_{rx} \times t_a = X_{a0} + V_{ax} \times t_a \\
+        Y_{r0} + V_{ry} \times t_a = Y_{a0} + V_{ay} \times t_a \\
+        Z_{r0} + V_{rz} \times t_a = Z_{a0} + V_{az} \times t_a \\
+    \end{cases}
+\end{equation}
+
+Move $t_a$ to the left side, components not dependent on it - to the right.
+\begin{displaymath}
+    \begin{cases}
+        V_{rx} \times t_a - V_{ax} \times t_a = X_{a0} - X_{r0} \\
+        V_{ry} \times t_a - V_{ay} \times t_a = Y_{a0} - Y_{r0} \\
+        V_{rz} \times t_a - V_{az} \times t_a = Z_{a0} - Z_{r0} \\
+    \end{cases}
+\end{displaymath}
+
+Express $t_a$:
+
+\begin{displaymath}
+    \begin{cases}
+        t_a = \frac{X_{a0} - X_{r0}}{V_{rx} - V_{ax}} \\
+        t_a = \frac{Y_{a0} - Y_{r0}}{V_{ry} - V_{ay}} \\
+        t_a = \frac{Z_{a0} - Z_{r0}}{V_{rz} - V_{az}} \\
+    \end{cases}
+\end{displaymath}
+
+Eliminate $t_a$:
+
+\begin{displaymath}
+    \begin{cases}
+        \frac{X_{a0} - X_{r0}}{V_{rx} - V_{ax}} = \frac{Y_{a0} - Y_{r0}}{V_{ry} - V_{ay}}\\
+        \frac{Y_{a0} - Y_{r0}}{V_{ry} - V_{ay}} = \frac{Z_{a0} - Z_{r0}}{V_{rz} - V_{az}}\\
+    \end{cases}
+\end{displaymath}
+
+
+Get rid of fractions:
+
+\begin{displaymath}
+    \begin{cases}
+        (X_{a0} - X_{r0}) \times (V_{ry} - V_{ay}) = (Y_{a0} - Y_{r0}) \times (V_{rx} - V_{ax})\\
+        (Y_{a0} - Y_{r0}) \times (V_{rz} - V_{az}) = (Z_{a0} - Z_{r0}) \times (V_{ry} - V_{ay})\\
+    \end{cases}
+\end{displaymath}
+
+This leaves us with 2 equations and 6 unknowns: $X_{r0}$, $Y_{r0}$, $Z_{r0}$, $V_{rx}$, $V_{ry}$ and $V_{rz}$. For us to be able to
+find these unknowns, we require 4 more equations. Fortunately there are more than enough points to plug in, just take 2 more hailstones.
+
+Unfortunately this does not look like Linear equation system, so simple solution using \emph{System of Linear equations} is not likely to be viable.
+
+I'm giving up for now and resorting to equation solver-based solution. Let's try out Z3.
+
 
 
 
