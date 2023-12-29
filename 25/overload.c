@@ -34,9 +34,10 @@ int nlinks;
 static void add_to_index(char *line);
 static void mark_links(char *line);
 static int find_in_index(const char *name);
-static void print_links();
+static void print_matrix();
 static int count_visitable();
 static void build_linklist();
+static void print_dot();
 
 int main(void)
 {
@@ -59,6 +60,8 @@ int main(void)
     }
     fclose(input);
 
+    //print_dot();
+    //return 0;
     build_linklist();
     //print_links();
 
@@ -82,42 +85,16 @@ int main(void)
         //cut link
         links[la->src][la->dest] = false;
         links[la->dest][la->src] = false;
-        for (int b = a + 1; b < nlinks; ++b)
+
+        int visitable = count_visitable();
+        if (visitable != ncomponents)
         {
-            struct link_item *lb = &link_list[b];
-
-            //cut link
-            links[lb->src][lb->dest] = false;
-            links[lb->dest][lb->src] = false;
-
-            for (int c = b + 1; c < nlinks; ++c)
-            {
-                struct link_item *lc = &link_list[c];
-
-                //cut link
-                links[lc->src][lc->dest] = false;
-                links[lc->dest][lc->src] = false;
-
-                int visitable = count_visitable();
-                if (visitable != ncomponents)
-                {
-                    printf("Result: %d %d\n", visitable, ncomponents - visitable);
-                    exit(0);
-                }
-                ++progress;
-
-                //put it back
-                links[lc->src][lc->dest] = true;
-                links[lc->dest][lc->src] = true;
-
-            }
-
-            //put it back
-            links[lb->src][lb->dest] = true;
-            links[lb->dest][lb->src] = true;
-
-            printf("%ld (%g %%)\n", progress, progress / 66552578.69);
+            printf("cut %s/%s\n", components[la->src].name, components[la->dest].name);
+            printf("Clusters: %d %d\n", visitable, ncomponents - visitable);
+            printf("Result: %d\n", visitable * (ncomponents - visitable));
+            exit(0);
         }
+
         // put it back
         links[la->src][la->dest] = true;
         links[la->dest][la->src] = true;
@@ -225,7 +202,7 @@ static void build_linklist()
     }
 }
 
-static void print_links()
+static void print_matrix()
 {
     for (int x = 0; x < 3; ++x)
     {
@@ -246,4 +223,20 @@ static void print_links()
         }
         printf("\n");
     }
+}
+
+static void print_dot()
+{
+    printf("graph {\n");
+    for (int r = 0; r < ncomponents; ++r)
+    {
+        for (int c = r + 1; c < ncomponents; ++c)
+        {
+            if (links[r][c])
+            {
+                printf("    %s -- %s\n", components[r].name, components[c].name);
+            }
+        }
+    }
+    printf("}\n");
 }
