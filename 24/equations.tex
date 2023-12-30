@@ -289,101 +289,83 @@ Express $t_a$:
     \end{cases}
 \end{displaymath}
 
-Eliminate $t_a$:
-
+Let's focus on X and Y coordinates for now.
 \begin{displaymath}
-    \begin{cases}
-        \frac{X_{a0} - X_{r0}}{V_{rx} - V_{ax}} = \frac{Y_{a0} - Y_{r0}}{V_{ry} - V_{ay}}\\
-        \frac{Y_{a0} - Y_{r0}}{V_{ry} - V_{ay}} = \frac{Z_{a0} - Z_{r0}}{V_{rz} - V_{az}}\\
-    \end{cases}
+    \frac{X_{a0} - X_{r0}}{V_{rx} - V_{ax}} = \frac{Y_{a0} - Y_{r0}}{V_{ry} - V_{ay}}\\
 \end{displaymath}
 
 
 Get rid of fractions:
-
 \begin{displaymath}
-    \begin{cases}
-        (X_{a0} - X_{r0}) \times (V_{ry} - V_{ay}) = (Y_{a0} - Y_{r0}) \times (V_{rx} - V_{ax})\\
-        (Y_{a0} - Y_{r0}) \times (V_{rz} - V_{az}) = (Z_{a0} - Z_{r0}) \times (V_{ry} - V_{ay})\\
-    \end{cases}
+    (X_{a0} - X_{r0}) \times (V_{ry} - V_{ay}) = (Y_{a0} - Y_{r0}) \times (V_{rx} - V_{ax})\\
 \end{displaymath}
 
-This leaves us with 2 equations and 6 unknowns: $X_{r0}$, $Y_{r0}$, $Z_{r0}$, $V_{rx}$, $V_{ry}$ and $V_{rz}$. Let's get rid of
-parentheses first:
-
+Get rid of parentheses:
 \begin{displaymath}
-    \begin{cases}
-        X_{a0} \times V_{ry} - X_{a0} \times V_{ay} - X_{r0} \times V_{ry} + X_{r0} \times V_{ay} = Y_{a0} \times V_{rx} - Y_{a0} \times V_{ax} - Y_{r0} \times V_{rx} + Y_{r0} \times V_{ax}\\
-        Y_{a0} \times V_{rz} - Y_{a0} \times V_{az} - Y_{r0} \times V_{rz} + Y_{r0} \times V_{az} = Z_{a0} \times V_{ry} - Z_{a0} \times V_{ay} - Z_{r0} \times V_{ry} + Z_{r0} \times V_{ay}\\
-    \end{cases}
+    X_{a0} \times V_{ry} - X_{a0} \times V_{ay} - X_{r0} \times V_{ry} + X_{r0} \times V_{ay} = Y_{a0} \times V_{rx} - Y_{a0} \times V_{ax} - Y_{r0} \times V_{rx} + Y_{r0} \times V_{ax}\\
 \end{displaymath}
 
-And re-arrange it a little.
-
+Re-arrange so that seemingly non-linear part is on the left side.
 \begin{displaymath}
-    \begin{cases}
-        Y_{r0} \times V_{rx} - X_{r0} \times V_{ry} = Y_{a0} \times V_{rx} - Y_{a0} \times V_{ax} + Y_{r0} \times V_{ax} - X_{a0} \times V_{ry} + X_{a0} \times V_{ay} - X_{r0} \times V_{ay}\\
-        Z_{r0} \times V_{ry} - Y_{r0} \times V_{rz} = Z_{a0} \times V_{ry} - Z_{a0} \times V_{ay} + Z_{r0} \times V_{ay} - Y_{a0} \times V_{rz} + Y_{a0} \times V_{az} - Y_{r0} \times V_{az}\\
-    \end{cases}
+    Y_{r0} \times V_{rx} - X_{r0} \times V_{ry} = Y_{a0} \times V_{rx} - Y_{a0} \times V_{ax} + Y_{r0} \times V_{ax} - X_{a0} \times V_{ry} + X_{a0} \times V_{ay} - X_{r0} \times V_{ay}\\
 \end{displaymath}
 
-The $Y_{r0} \times V_{rx} - X_{r0} \times V_{ry}$ part (and another one with Y and Z) may seem non-linear, however, we can get rid of it, because it will be the same for each hailstone. Let's introduce
-hailstone B then:
 
+The $Y_{r0} \times V_{rx} - X_{r0} \times V_{ry}$ part may seem non-linear, but it will be the same for each hailstone. Let's introduce
+hailstone B:
 \begin{displaymath}
-    \begin{cases}
-        Y_{a0} \times V_{rx} - Y_{a0} \times V_{ax} + Y_{r0} \times V_{ax} - X_{a0} \times V_{ry} + X_{a0} \times V_{ay} - X_{r0} \times V_{ay} = Y_{b0} \times V_{rx} - Y_{b0} \times V_{bx} + Y_{r0} \times V_{bx} - X_{b0} \times V_{ry} + X_{b0} \times V_{by} - X_{r0} \times V_{by}\\
-        Z_{a0} \times V_{ry} - Z_{a0} \times V_{ay} + Z_{r0} \times V_{ay} - Y_{a0} \times V_{rz} + Y_{a0} \times V_{az} - Y_{r0} \times V_{az} = Z_{b0} \times V_{ry} - Z_{b0} \times V_{by} + Z_{r0} \times V_{by} - Y_{b0} \times V_{rz} + Y_{b0} \times V_{bz} - Y_{r0} \times V_{bz}\\
-    \end{cases}
+    \begin{aligned}
+    Y_{a0} \times V_{rx} - Y_{a0} \times V_{ax} + Y_{r0} \times V_{ax} - X_{a0} \times V_{ry} + X_{a0} \times V_{ay} - X_{r0} \times V_{ay}\\
+  = Y_{b0} \times V_{rx} - Y_{b0} \times V_{bx} + Y_{r0} \times V_{bx} - X_{b0} \times V_{ry} + X_{b0} \times V_{by} - X_{r0} \times V_{by}\\
+    \end{aligned}
 \end{displaymath}
 
 Move stuff around again: constants to the right, unknowns to the left.
 
 \begin{displaymath}
-    \begin{cases}
-        Y_{a0} \times V_{rx} + Y_{r0} \times V_{ax} - X_{a0} \times V_{ry} - X_{r0} \times V_{ay} - Y_{b0} \times V_{rx} - Y_{r0} \times V_{bx} + X_{b0} \times V_{ry} + X_{r0} \times V_{by} = - Y_{b0} \times V_{bx} + X_{b0} \times V_{by} + Y_{a0} \times V_{ax} - X_{a0} \times V_{ay}\\
-        Z_{a0} \times V_{ry} + Z_{r0} \times V_{ay} - Y_{a0} \times V_{rz} - Y_{r0} \times V_{az} - Z_{b0} \times V_{ry} - Z_{r0} \times V_{by} + Y_{b0} \times V_{rz} + Y_{r0} \times V_{bz} = - Z_{b0} \times V_{by} + Y_{b0} \times V_{bz} + Z_{a0} \times V_{ay} - Y_{a0} \times V_{az}\\
-    \end{cases}
+    \begin{aligned}
+        Y_{a0} \times V_{rx} + Y_{r0} \times V_{ax} - X_{a0} \times V_{ry} - X_{r0} \times V_{ay} - Y_{b0} \times V_{rx} - Y_{r0} \times V_{bx} \\
+        + X_{b0} \times V_{ry} + X_{r0} \times V_{by} = - Y_{b0} \times V_{bx} + X_{b0} \times V_{by} + Y_{a0} \times V_{ax} - X_{a0} \times V_{ay}\\
+    \end{aligned}
 \end{displaymath}
 
 Group them:
 
 \begin{displaymath}
-    \begin{cases}
-        (V_{by} - V_{ay}) \times X_{r0} + (V_{ax} - V_{bx}) \times Y_{r0} + (Y_{a0} - Y_{b0}) \times V_{rx} + (X_{b0} - X_{a0}) \times V_{ry} = X_{b0} \times V_{by} - Y_{b0} \times V_{bx} - X_{a0} \times V_{ay} + Y_{a0} \times V_{ax}\\
-        (V_{bz} - V_{az}) \times Y_{r0} + (V_{ay} - V_{by}) \times Z_{r0} + (Z_{a0} - Z_{b0}) \times V_{ry} + (Y_{b0} - Y_{a0}) \times V_{rz} = Y_{b0} \times V_{bz} - Z_{b0} \times V_{by} - Y_{a0} \times V_{az} + Z_{a0} \times V_{ay}\\
-    \end{cases}
+    \begin{aligned}
+        (V_{by} - V_{ay}) \times X_{r0} + (V_{ax} - V_{bx}) \times Y_{r0} + (Y_{a0} - Y_{b0}) \times V_{rx} + (X_{b0} - X_{a0}) \times V_{ry} \\
+        = X_{b0} \times V_{by} - Y_{b0} \times V_{bx} - X_{a0} \times V_{ay} + Y_{a0} \times V_{ax}\\
+    \end{aligned}
 \end{displaymath}
 
-We're still with 2 equations and 6 unknowns. Let's add another hailstone C and express it as equations for A vs C and B vs C
+Now we have an equation with 4 unknowns. To solve it, we need 4 equations. Let's introduce additional hailstones C, D and E
 
 \begin{displaymath}
     \begin{cases}
         (V_{by} - V_{ay}) \times X_{r0} + (V_{ax} - V_{bx}) \times Y_{r0} + (Y_{a0} - Y_{b0}) \times V_{rx} + (X_{b0} - X_{a0}) \times V_{ry} = X_{b0} \times V_{by} - Y_{b0} \times V_{bx} - X_{a0} \times V_{ay} + Y_{a0} \times V_{ax}\\
-        (V_{bz} - V_{az}) \times Y_{r0} + (V_{ay} - V_{by}) \times Z_{r0} + (Z_{a0} - Z_{b0}) \times V_{ry} + (Y_{b0} - Y_{a0}) \times V_{rz} = Y_{b0} \times V_{bz} - Z_{b0} \times V_{by} - Y_{a0} \times V_{az} + Z_{a0} \times V_{ay}\\
         (V_{cy} - V_{ay}) \times X_{r0} + (V_{ax} - V_{cx}) \times Y_{r0} + (Y_{a0} - Y_{c0}) \times V_{rx} + (X_{c0} - X_{a0}) \times V_{ry} = X_{c0} \times V_{cy} - Y_{c0} \times V_{cx} - X_{a0} \times V_{ay} + Y_{a0} \times V_{ax}\\
-        (V_{cz} - V_{az}) \times Y_{r0} + (V_{ay} - V_{cy}) \times Z_{r0} + (Z_{a0} - Z_{c0}) \times V_{ry} + (Y_{c0} - Y_{a0}) \times V_{rz} = Y_{c0} \times V_{cz} - Z_{c0} \times V_{cy} - Y_{a0} \times V_{az} + Z_{a0} \times V_{ay}\\
-        (V_{cy} - V_{by}) \times X_{r0} + (V_{bx} - V_{cx}) \times Y_{r0} + (Y_{b0} - Y_{c0}) \times V_{rx} + (X_{c0} - X_{b0}) \times V_{ry} = X_{c0} \times V_{cy} - Y_{c0} \times V_{cx} - X_{b0} \times V_{by} + Y_{b0} \times V_{bx}\\
-        (V_{cz} - V_{bz}) \times Y_{r0} + (V_{by} - V_{cy}) \times Z_{r0} + (Z_{b0} - Z_{c0}) \times V_{ry} + (Y_{c0} - Y_{b0}) \times V_{rz} = Y_{c0} \times V_{cz} - Z_{c0} \times V_{cy} - Y_{b0} \times V_{bz} + Z_{b0} \times V_{by}\\
+        (V_{dy} - V_{ay}) \times X_{r0} + (V_{ax} - V_{dx}) \times Y_{r0} + (Y_{a0} - Y_{d0}) \times V_{rx} + (X_{d0} - X_{a0}) \times V_{ry} = X_{d0} \times V_{dy} - Y_{d0} \times V_{dx} - X_{a0} \times V_{ay} + Y_{a0} \times V_{ax}\\
+        (V_{ey} - V_{ay}) \times X_{r0} + (V_{ax} - V_{ex}) \times Y_{r0} + (Y_{a0} - Y_{e0}) \times V_{rx} + (X_{e0} - X_{a0}) \times V_{ry} = X_{e0} \times V_{ey} - Y_{e0} \times V_{ex} - X_{a0} \times V_{ay} + Y_{a0} \times V_{ax}\\
     \end{cases}
 \end{displaymath}
 
-Now there's 6 equations, and 6 unknowns. We should be able to solve it. Let's compose it into a matrix:
-
+Now there are 4 equations and 4 unknowns, this should be solvable. Let's compose it into a matrix:
 
 \begin{displaymath}
-    \begin{bmatrix}[cccccc|c]
-        V_{by} - V_{ay} & V_{ax} - V_{bx} &               0 & Y_{a0} - Y_{b0} & X_{b0} - X_{a0} &               0 & X_{b0} \times V_{by} - Y_{b0} \times V_{bx} - X_{a0} \times V_{ay} + Y_{a0} \times V_{ax}\\
-                      0 & V_{bz} - V_{az} & V_{ay} - V_{by} &               0 & Z_{a0} - Z_{b0} & Y_{b0} - Y_{a0} & Y_{b0} \times V_{bz} - Z_{b0} \times V_{by} - Y_{a0} \times V_{az} + Z_{a0} \times V_{ay}\\
-        V_{cy} - V_{ay} & V_{ax} - V_{cx} &               0 & Y_{a0} - Y_{c0} & X_{c0} - X_{a0} &               0 & X_{c0} \times V_{cy} - Y_{c0} \times V_{cx} - X_{a0} \times V_{ay} + Y_{a0} \times V_{ax}\\
-                      0 & V_{cz} - V_{az} & V_{ay} - V_{cy} &               0 & Z_{a0} - Z_{c0} & Y_{c0} - Y_{a0} & Y_{c0} \times V_{cz} - Z_{c0} \times V_{cy} - Y_{a0} \times V_{az} + Z_{a0} \times V_{ay}\\
-        V_{cy} - V_{by} & V_{bx} - V_{cx} &               0 & Y_{b0} - Y_{c0} & X_{c0} - X_{b0} &               0 & X_{c0} \times V_{cy} - Y_{c0} \times V_{cx} - X_{b0} \times V_{by} + Y_{b0} \times V_{bx}\\
-                      0 & V_{cz} - V_{bz} & V_{by} - V_{cy} &               0 & Z_{b0} - Z_{c0} & Y_{c0} - Y_{b0} & Y_{c0} \times V_{cz} - Z_{c0} \times V_{cy} - Y_{b0} \times V_{bz} + Z_{b0} \times V_{by}\\
+    \begin{bmatrix}[cccc|c]
+        V_{by} - V_{ay} & V_{ax} - V_{bx} & Y_{a0} - Y_{b0} & X_{b0} - X_{a0} & X_{b0} \times V_{by} - Y_{b0} \times V_{bx} - X_{a0} \times V_{ay} + Y_{a0} \times V_{ax}\\
+        V_{cy} - V_{ay} & V_{ax} - V_{cx} & Y_{a0} - Y_{c0} & X_{c0} - X_{a0} & X_{c0} \times V_{cy} - Y_{c0} \times V_{cx} - X_{a0} \times V_{ay} + Y_{a0} \times V_{ax}\\
+        V_{dy} - V_{ay} & V_{ax} - V_{dx} & Y_{a0} - Y_{d0} & X_{d0} - X_{a0} & X_{d0} \times V_{dy} - Y_{d0} \times V_{dx} - X_{a0} \times V_{ay} + Y_{a0} \times V_{ax}\\
+        V_{ey} - V_{ay} & V_{ax} - V_{ex} & Y_{a0} - Y_{e0} & X_{e0} - X_{a0} & X_{e0} \times V_{ey} - Y_{e0} \times V_{ex} - X_{a0} \times V_{ay} + Y_{a0} \times V_{ax}\\
     \end{bmatrix}
 \end{displaymath}
 
+Gauss-elimination solver found the solution. This gives us position and velocity in XY plane. What about Z? Just repeat the process using XZ or YZ pairs of coordinates.
 
-Will my Gauss-eliminator will be able to crack it? It didn't.
+We're doing a lot of floating-point math on fairly big numbers, so there might be some precision loss. Let's calculate all possible combinations (XY, XZ and YZ)
+and then use averages from them.
+
+
 
 
 \end{document}

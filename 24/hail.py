@@ -2,6 +2,7 @@
 
 import z3
 
+
 hailstones = []
 
 TEST_AREA_MIN = 200000000000000
@@ -94,30 +95,70 @@ def solve_p2_z3():
     solver.check()
     m = solver.model();
 
+    print (m[xr0].as_long(), m[yr0].as_long(), m[zr0].as_long())
+    print (m[vrx].as_long(), m[vry].as_long(), m[vrz].as_long())
+
     result2 = m[xr0].as_long() + m[yr0].as_long() + m[zr0].as_long()
+
     print (f"Result p2: {result2}")
 
 def solve_p2_gauss():
     (xa0, ya0, za0), (vax, vay, vaz) = hailstones[0]
     (xb0, yb0, zb0), (vbx, vby, vbz) = hailstones[1]
     (xc0, yc0, zc0), (vcx, vcy, vcz) = hailstones[2]
+    (xd0, yd0, zd0), (vdx, vdy, vdz) = hailstones[3]
+    (xe0, ye0, ze0), (vex, vey, vez) = hailstones[4]
 
-    matrix = [
-        [vby - vay, vax - vbx,         0, ya0 - yb0, xb0 - xa0,         0, xb0 * vby - yb0 * vbx - xa0 * vay + ya0 * vax],
-        [        0, vbz - vaz, vay - vby,         0, za0 - zb0, yb0 - ya0, yb0 * vbz - zb0 * vby - ya0 * vaz + za0 * vay],
-        [vcy - vay, vax - vcx,         0, ya0 - yc0, xc0 - xa0,         0, xc0 * vcy - yc0 * vcx - xa0 * vay + ya0 * vax],
-        [        0, vcz - vaz, vay - vcy,         0, za0 - zc0, yc0 - ya0, yc0 * vcz - zc0 * vcy - ya0 * vaz + za0 * vay],
-        [vcy - vby, vbx - vcx,         0, yb0 - yc0, xc0 - xb0,         0, xc0 * vcy - yc0 * vcx - xb0 * vby + yb0 * vbx],
-        [        0, vcz - vbz, vby - vcy,         0, zb0 - zc0, yc0 - yb0, yc0 * vcz - zc0 * vcy - yb0 * vbz + zb0 * vby],
+
+    # let's do the calculations around all combinations of axis and average them to
+    # improve accuracy
+    matrix_xy = [
+        [vby - vay, vax - vbx, ya0 - yb0, xb0 - xa0, xb0 * vby - yb0 * vbx - xa0 * vay + ya0 * vax],
+        [vcy - vay, vax - vcx, ya0 - yc0, xc0 - xa0, xc0 * vcy - yc0 * vcx - xa0 * vay + ya0 * vax],
+        [vdy - vay, vax - vdx, ya0 - yd0, xd0 - xa0, xd0 * vdy - yd0 * vdx - xa0 * vay + ya0 * vax],
+        [vey - vay, vax - vex, ya0 - ye0, xe0 - xa0, xe0 * vey - ye0 * vex - xa0 * vay + ya0 * vax],
     ]
 
-    if not gauss_eliminate(matrix):
+    matrix_xz = [
+        [vbz - vaz, vax - vbx, za0 - zb0, xb0 - xa0, xb0 * vbz - zb0 * vbx - xa0 * vaz + za0 * vax],
+        [vcz - vaz, vax - vcx, za0 - zc0, xc0 - xa0, xc0 * vcz - zc0 * vcx - xa0 * vaz + za0 * vax],
+        [vdz - vaz, vax - vdx, za0 - zd0, xd0 - xa0, xd0 * vdz - zd0 * vdx - xa0 * vaz + za0 * vax],
+        [vez - vaz, vax - vex, za0 - ze0, xe0 - xa0, xe0 * vez - ze0 * vex - xa0 * vaz + za0 * vax],
+    ]
+
+    matrix_yz = [
+        [vbz - vaz, vay - vby, za0 - zb0, yb0 - ya0, yb0 * vbz - zb0 * vby - ya0 * vaz + za0 * vay],
+        [vcz - vaz, vay - vcy, za0 - zc0, yc0 - ya0, yc0 * vcz - zc0 * vcy - ya0 * vaz + za0 * vay],
+        [vdz - vaz, vay - vdy, za0 - zd0, yd0 - ya0, yd0 * vdz - zd0 * vdy - ya0 * vaz + za0 * vay],
+        [vez - vaz, vay - vey, za0 - ze0, ye0 - ya0, ye0 * vez - ze0 * vey - ya0 * vaz + za0 * vay],
+    ]
+
+    if not gauss_eliminate(matrix_xy):
         raise Exception("WTF?")
 
+    if not gauss_eliminate(matrix_xz):
+        raise Exception("WTF?")
+
+    if not gauss_eliminate(matrix_yz):
+        raise Exception("WTF?")
+
+    xr0 = round((matrix_xy[0][-1] + matrix_xz[0][-1])/2)
+    yr0 = round((matrix_xy[1][-1] + matrix_yz[0][-1])/2)
+    vrx = round((matrix_xy[2][-1] + matrix_xz[2][-1])/2)
+    vry = round((matrix_yz[3][-1] + matrix_yz[2][-1])/2)
+    zr0 = round((matrix_yz[1][-1] + matrix_xz[1][-1])/2)
+    vrz = round((matrix_yz[3][-1] + matrix_xz[3][-1])/2)
+
+    print (xr0, yr0, zr0)
+    print (vrx, vry, vrz)
+
+    result2 = xr0 + yr0 + zr0
+    print (f"Result p2: {result2}")
 
 
 
-with open("24/input.txt") as f:
+
+with open("input.txt") as f:
     for line in f:
         p, v = line.split("@")
         pos = tuple(map(lambda x: int(x.strip()), p.split(',')))
