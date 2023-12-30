@@ -355,26 +355,16 @@ Group them:
     \end{cases}
 \end{displaymath}
 
-We're still with 2 equations and 6 unknowns. Let's express same thing in terms of X vs. Z:
+We're still with 2 equations and 6 unknowns. Let's add another hailstone C and express it as equations for A vs C and B vs C
 
 \begin{displaymath}
     \begin{cases}
         (V_{by} - V_{ay}) \times X_{r0} + (V_{ax} - V_{bx}) \times Y_{r0} + (Y_{a0} - Y_{b0}) \times V_{rx} + (X_{b0} - X_{a0}) \times V_{ry} = X_{b0} \times V_{by} - Y_{b0} \times V_{bx} - X_{a0} \times V_{ay} + Y_{a0} \times V_{ax}\\
-        (V_{bz} - V_{az}) \times X_{r0} + (V_{ax} - V_{bx}) \times Z_{r0} + (Z_{a0} - Z_{b0}) \times V_{rx} + (X_{b0} - X_{a0}) \times V_{rz} = X_{b0} \times V_{bz} - Z_{b0} \times V_{bx} - X_{a0} \times V_{az} + Z_{a0} \times V_{ax}\\
-        (V_{bz} - V_{az}) \times Y_{r0} + (V_{ay} - V_{by}) \times Z_{r0} + (Z_{a0} - Z_{b0}) \times V_{ry} + (Y_{b0} - Y_{a0}) \times V_{rz} = Y_{b0} \times V_{bz} - Z_{b0} \times V_{by} - Y_{a0} \times V_{az} + Z_{a0} \times V_{ay}\\
-    \end{cases}
-\end{displaymath}
-
-3 equations is better, but still not enough, let's add yet another hailstone C:
-
-\begin{displaymath}
-    \begin{cases}
-        (V_{by} - V_{ay}) \times X_{r0} + (V_{ax} - V_{bx}) \times Y_{r0} + (Y_{a0} - Y_{b0}) \times V_{rx} + (X_{b0} - X_{a0}) \times V_{ry} = X_{b0} \times V_{by} - Y_{b0} \times V_{bx} - X_{a0} \times V_{ay} + Y_{a0} \times V_{ax}\\
-        (V_{bz} - V_{az}) \times X_{r0} + (V_{ax} - V_{bx}) \times Z_{r0} + (Z_{a0} - Z_{b0}) \times V_{rx} + (X_{b0} - X_{a0}) \times V_{rz} = X_{b0} \times V_{bz} - Z_{b0} \times V_{bx} - X_{a0} \times V_{az} + Z_{a0} \times V_{ax}\\
         (V_{bz} - V_{az}) \times Y_{r0} + (V_{ay} - V_{by}) \times Z_{r0} + (Z_{a0} - Z_{b0}) \times V_{ry} + (Y_{b0} - Y_{a0}) \times V_{rz} = Y_{b0} \times V_{bz} - Z_{b0} \times V_{by} - Y_{a0} \times V_{az} + Z_{a0} \times V_{ay}\\
         (V_{cy} - V_{ay}) \times X_{r0} + (V_{ax} - V_{cx}) \times Y_{r0} + (Y_{a0} - Y_{c0}) \times V_{rx} + (X_{c0} - X_{a0}) \times V_{ry} = X_{c0} \times V_{cy} - Y_{c0} \times V_{cx} - X_{a0} \times V_{ay} + Y_{a0} \times V_{ax}\\
-        (V_{cz} - V_{az}) \times X_{r0} + (V_{ax} - V_{cx}) \times Z_{r0} + (Z_{a0} - Z_{c0}) \times V_{rx} + (X_{c0} - X_{a0}) \times V_{rz} = X_{c0} \times V_{cz} - Z_{c0} \times V_{cx} - X_{a0} \times V_{az} + Z_{a0} \times V_{ax}\\
         (V_{cz} - V_{az}) \times Y_{r0} + (V_{ay} - V_{cy}) \times Z_{r0} + (Z_{a0} - Z_{c0}) \times V_{ry} + (Y_{c0} - Y_{a0}) \times V_{rz} = Y_{c0} \times V_{cz} - Z_{c0} \times V_{cy} - Y_{a0} \times V_{az} + Z_{a0} \times V_{ay}\\
+        (V_{cy} - V_{by}) \times X_{r0} + (V_{bx} - V_{cx}) \times Y_{r0} + (Y_{b0} - Y_{c0}) \times V_{rx} + (X_{c0} - X_{b0}) \times V_{ry} = X_{c0} \times V_{cy} - Y_{c0} \times V_{cx} - X_{b0} \times V_{by} + Y_{b0} \times V_{bx}\\
+        (V_{cz} - V_{bz}) \times Y_{r0} + (V_{by} - V_{cy}) \times Z_{r0} + (Z_{b0} - Z_{c0}) \times V_{ry} + (Y_{c0} - Y_{b0}) \times V_{rz} = Y_{c0} \times V_{cz} - Z_{c0} \times V_{cy} - Y_{b0} \times V_{bz} + Z_{b0} \times V_{by}\\
     \end{cases}
 \end{displaymath}
 
@@ -384,16 +374,16 @@ Now there's 6 equations, and 6 unknowns. We should be able to solve it. Let's co
 \begin{displaymath}
     \begin{bmatrix}[cccccc|c]
         V_{by} - V_{ay} & V_{ax} - V_{bx} &               0 & Y_{a0} - Y_{b0} & X_{b0} - X_{a0} &               0 & X_{b0} \times V_{by} - Y_{b0} \times V_{bx} - X_{a0} \times V_{ay} + Y_{a0} \times V_{ax}\\
-        V_{bz} - V_{az} &               0 & V_{ax} - V_{bx} & Z_{a0} - Z_{b0} &               0 & X_{b0} - X_{a0} & X_{b0} \times V_{bz} - Z_{b0} \times V_{bx} - X_{a0} \times V_{az} + Z_{a0} \times V_{ax}\\
                       0 & V_{bz} - V_{az} & V_{ay} - V_{by} &               0 & Z_{a0} - Z_{b0} & Y_{b0} - Y_{a0} & Y_{b0} \times V_{bz} - Z_{b0} \times V_{by} - Y_{a0} \times V_{az} + Z_{a0} \times V_{ay}\\
         V_{cy} - V_{ay} & V_{ax} - V_{cx} &               0 & Y_{a0} - Y_{c0} & X_{c0} - X_{a0} &               0 & X_{c0} \times V_{cy} - Y_{c0} \times V_{cx} - X_{a0} \times V_{ay} + Y_{a0} \times V_{ax}\\
-        V_{cz} - V_{az} &               0 & V_{ax} - V_{cx} & Z_{a0} - Z_{c0} &               0 & X_{c0} - X_{a0} & X_{c0} \times V_{cz} - Z_{c0} \times V_{cx} - X_{a0} \times V_{az} + Z_{a0} \times V_{ax}\\
                       0 & V_{cz} - V_{az} & V_{ay} - V_{cy} &               0 & Z_{a0} - Z_{c0} & Y_{c0} - Y_{a0} & Y_{c0} \times V_{cz} - Z_{c0} \times V_{cy} - Y_{a0} \times V_{az} + Z_{a0} \times V_{ay}\\
+        V_{cy} - V_{by} & V_{bx} - V_{cx} &               0 & Y_{b0} - Y_{c0} & X_{c0} - X_{b0} &               0 & X_{c0} \times V_{cy} - Y_{c0} \times V_{cx} - X_{b0} \times V_{by} + Y_{b0} \times V_{bx}\\
+                      0 & V_{cz} - V_{bz} & V_{by} - V_{cy} &               0 & Z_{b0} - Z_{c0} & Y_{c0} - Y_{b0} & Y_{c0} \times V_{cz} - Z_{c0} \times V_{cy} - Y_{b0} \times V_{bz} + Z_{b0} \times V_{by}\\
     \end{bmatrix}
 \end{displaymath}
 
 
-Will my Gauss-eliminator will be able to crack it?
+Will my Gauss-eliminator will be able to crack it? It didn't.
 
 
 \end{document}

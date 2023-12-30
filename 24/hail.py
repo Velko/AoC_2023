@@ -104,11 +104,11 @@ def solve_p2_gauss():
 
     matrix = [
         [vby - vay, vax - vbx,         0, ya0 - yb0, xb0 - xa0,         0, xb0 * vby - yb0 * vbx - xa0 * vay + ya0 * vax],
-        [vbz - vaz,         0, vax - vbx, za0 - zb0,         0, xb0 - xa0, xb0 * vbz - zb0 * vbx - xa0 * vaz + za0 * vax],
         [        0, vbz - vaz, vay - vby,         0, za0 - zb0, yb0 - ya0, yb0 * vbz - zb0 * vby - ya0 * vaz + za0 * vay],
         [vcy - vay, vax - vcx,         0, ya0 - yc0, xc0 - xa0,         0, xc0 * vcy - yc0 * vcx - xa0 * vay + ya0 * vax],
-        [vcz - vaz,         0, vax - vcx, za0 - zc0,         0, xc0 - xa0, xc0 * vcz - zc0 * vcx - xa0 * vaz + za0 * vax],
         [        0, vcz - vaz, vay - vcy,         0, za0 - zc0, yc0 - ya0, yc0 * vcz - zc0 * vcy - ya0 * vaz + za0 * vay],
+        [vcy - vby, vbx - vcx,         0, yb0 - yc0, xc0 - xb0,         0, xc0 * vcy - yc0 * vcx - xb0 * vby + yb0 * vbx],
+        [        0, vcz - vbz, vby - vcy,         0, zb0 - zc0, yc0 - yb0, yc0 * vcz - zc0 * vcy - yb0 * vbz + zb0 * vby],
     ]
 
     if not gauss_eliminate(matrix):
