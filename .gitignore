@@ -5,3 +5,7 @@
 bin/
 obj/
 .vscode/
+*.aux
+*.log
+*.pdf
+*.svg

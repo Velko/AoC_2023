@@ -365,6 +365,9 @@ Gauss-elimination solver found the solution. This gives us position and velocity
 We're doing a lot of floating-point math on fairly big numbers, so there might be some precision loss. Let's calculate all possible combinations (XY, XZ and YZ)
 and then use averages from them.
 
+In fact it still did not work right in C (Python for some reason worked better) and I got an imprecision of almost 3. It started to work better when I switched
+to \emph{long double} data type (which on my platform (x86\_64) is more precise than regular \emph{double}).
+
 
 
 
