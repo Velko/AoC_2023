@@ -42,8 +42,19 @@ struct hail
 struct hail hailstones[MAX_HAIL];
 int nhailstones;
 
+#define MATRIX_MAX  5
+
+struct matrix
+{
+    double matrix[MATRIX_MAX][MATRIX_MAX];
+    int nrows;
+};
+
+
 static void parse_line(const char *line);
 static bool calc_intersect(struct hail *a, struct hail *b);
+static bool gauss_eliminate(struct matrix *m);
+static int calc_p1();
 
 #ifdef DEBUG_PRINT
 static void print_hail(struct hail *a);
@@ -65,6 +76,16 @@ int main(void)
     }
     fclose(input);
 
+    int result1 = calc_p1();
+
+    // Result p1: 16018
+    printf("Result p1: %d\n", result1);
+
+    return 0;
+}
+
+static int calc_p1()
+{
     int total = 0;
 
     for (int j = 0; j < nhailstones; ++j)
@@ -76,10 +97,7 @@ int main(void)
         }
     }
 
-    // Result p1: 16018
-    printf("Result p1: %d\n", total);
-
-    return 0;
+    return total;
 }
 
 
@@ -108,42 +126,25 @@ static bool calc_intersect(struct hail *a, struct hail *b)
     print_hail(b);
     #endif
 
+    struct matrix m = {
+        .nrows = 2,
+        .matrix = { 
+            { a->velocity.x, -b->velocity.x, b->position.x - a->position.x },
+            { a->velocity.y, -b->velocity.y, b->position.y - a->position.y },
+        },
+    };
 
-    long dividend_b = (b->position.y - a->position.y) * a->velocity.x - (b->position.x - a->position.x) * a->velocity.y;
-    long divisor_b = b->velocity.x * a->velocity.y - b->velocity.y * a->velocity.x;
-
-    long dividend_a = (a->position.y - b->position.y) * b->velocity.x - (a->position.x - b->position.x) * b->velocity.y;
-    long divisor_a = a->velocity.x * b->velocity.y - a->velocity.y * b->velocity.x;
-
-    if (divisor_b == 0) // parallel
-    {
-        #ifdef DEBUG_PRINT
-        printf("Parallel\n");
-        #endif
+    if (!gauss_eliminate(&m))
         return false;
-    }
 
-    if ((dividend_b > 0 && divisor_b < 0) || (dividend_b < 0 && divisor_b > 0)) // signs differ, intersected in past
-    {
-        #ifdef DEBUG_PRINT
-        printf("Past B\n");
-        #endif
+    double time_a = m.matrix[0][2];
+    double time_b = m.matrix[1][2];
+
+    if (time_a < 0 || time_b < 0)
         return false;
-    }
 
-    if ((dividend_a > 0 && divisor_a < 0) || (dividend_a < 0 && divisor_a > 0)) // signs differ, intersected in past
-    {
-        #ifdef DEBUG_PRINT
-        printf("Past A\n");
-        #endif
-        return false;
-    }
-
-    // Multiplying velocities with dividend_b first sometimes results in an (long) integer
-    // overflow. Making division first (calculating time) may lose some precision but
-    // appears to give correct result in the end.
-    double intersect_x = b->position.x + b->velocity.x * (dividend_b / (double)divisor_b);
-    double intersect_y = b->position.y + b->velocity.y * (dividend_b / (double)divisor_b);
+    double intersect_x = b->position.x + b->velocity.x * time_b;
+    double intersect_y = b->position.y + b->velocity.y * time_b;
 
     bool fits = intersect_x >= TEST_AREA_X_MIN && intersect_x <= TEST_AREA_X_MAX
              && intersect_y >= TEST_AREA_Y_MIN && intersect_y <= TEST_AREA_Y_MAX;
@@ -153,6 +154,40 @@ static bool calc_intersect(struct hail *a, struct hail *b)
     #endif
 
     return fits;
+}
+
+static bool gauss_eliminate(struct matrix *m)
+{
+    int ncols = m->nrows + 1;
+
+    for (int i = 0; i < m->nrows; ++i)
+    {
+        double d = m->matrix[i][i];
+        if (d == 0) return false;
+
+        for (int c = i; c < ncols; ++c)
+            m->matrix[i][c] /= d;
+
+        for (int j = i + 1; j < m->nrows; ++j)
+        {
+            double mul = m->matrix[j][i];
+            for (int c = i; c < ncols; ++c)
+                m->matrix[j][c] -= m->matrix[i][c] * mul;
+        }
+    }
+
+    for (int i = m->nrows - 1; i > 0; --i)
+    {
+        for (int j = 0; j < i; ++j)
+        {
+            double mul = m->matrix[j][i];
+            for (int c = i; c < ncols; ++c)
+                m->matrix[j][c] -= m->matrix[i][c] * mul;
+        }
+    }
+
+    return true;
+
 }
 
 #ifdef DEBUG_PRINT
