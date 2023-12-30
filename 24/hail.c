@@ -143,22 +143,32 @@ static bool calc_intersect(struct hail *a, struct hail *b)
     };
 
     if (!gauss_eliminate(&m))
+    {
+        #ifdef DEBUG_PRINT
+        printf("No solution, probably parallel or standstill\n");
+        #endif
         return false;
+    }
 
     double time_a = m.matrix[0][2];
     double time_b = m.matrix[1][2];
 
-    if (time_a < 0 || time_b < 0)
-        return false;
-
     double intersect_x = b->position.x + b->velocity.x * time_b;
     double intersect_y = b->position.y + b->velocity.y * time_b;
+
+    if (time_a < 0 || time_b < 0)
+    {
+        #ifdef DEBUG_PRINT
+        printf("Intersected in past (%f and %f) at (%f, %f)\n", time_a, time_b, intersect_x, intersect_y);
+        #endif
+        return false;
+    }
 
     bool fits = intersect_x >= TEST_AREA_X_MIN && intersect_x <= TEST_AREA_X_MAX
              && intersect_y >= TEST_AREA_Y_MIN && intersect_y <= TEST_AREA_Y_MAX;
 
     #ifdef DEBUG_PRINT
-    printf("Intersects %s at %ld (%d), %ld (%d)\n", fits ? "inside" : "outside", intersect_x, rem_x, intersect_y, rem_y);
+    printf("Intersects %s at (%f, %f)\n", fits ? "inside" : "outside", intersect_x, intersect_y);
     #endif
 
     return fits;
