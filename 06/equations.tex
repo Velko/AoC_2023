@@ -1,0 +1,85 @@
+\documentclass{article}
+\usepackage{amsmath}
+
+
+
+\begin{document}
+
+\begin{itemize}
+    \item $d$ - distance travelled
+    \item $v$ - velocity
+    \item $cr$ - charge rate
+    \item $t_t$ - travel time
+    \item $t_c$ - charge time
+    \item $t$ - total time
+\end{itemize}
+
+\begin{displaymath}
+    \begin{cases}
+        d = v \times t_t \\
+        v = cr \times t_c \\
+        t = t_t + t_c \\
+        cr = 1 \\
+    \end{cases}
+\end{displaymath}
+
+\begin{displaymath}
+    t_t = t - t_c
+\end{displaymath}
+
+\begin{displaymath}
+    d = 1 \times t_c \times (t - t_c)
+\end{displaymath}
+
+\begin{displaymath}
+    d = t_c \times t - t_c^2
+\end{displaymath}
+
+\begin{displaymath}
+    - t_c^2 + t_c \times t - d = 0
+\end{displaymath}
+
+This is quadratic equation with: $a = -1$, $b = t$ and $c = -d$.
+
+Calculate discriminant:
+
+\begin{displaymath}
+    \Delta = t^2 - 4 \times (-1) \times (-d)
+\end{displaymath}
+
+\begin{displaymath}
+    \Delta = t^2 - 4 \times d
+\end{displaymath}
+
+
+Roots:
+\begin{displaymath}
+    \frac{t \pm \sqrt{\Delta}}{2}\\
+\end{displaymath}
+
+
+The expected result is distance between roots:
+
+\begin{displaymath}
+    res = \frac{t + \sqrt{\Delta}}{2} - \frac{t - \sqrt{\Delta}}{2}
+\end{displaymath}
+
+\begin{displaymath}
+    res = \frac{t + \sqrt{\Delta} - t + \sqrt{\Delta}}{2}
+\end{displaymath}
+
+\begin{displaymath}
+    res = \frac{\sqrt{\Delta} \times 2}{2}
+\end{displaymath}
+
+
+
+
+
+Arriving at final expression:
+\begin{equation}
+    res = \sqrt{t^2 - 4 \times d}
+\end{equation}
+
+
+\end{document}
