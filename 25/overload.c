@@ -4,6 +4,9 @@
 #include <assert.h>
 #include <stdbool.h>
 
+//#define DEBUG_PRINT
+
+
 #define BUFFER_SIZE     256
 
 #define MAX_COMPONENTS  1600
@@ -12,6 +15,7 @@
 struct component
 {
     char name[MAX_NAME];
+    int group;
 };
 
 
@@ -21,23 +25,26 @@ int ncomponents;
 
 bool links[MAX_COMPONENTS][MAX_COMPONENTS];
 
-#define MAX_LINKS       3500
-struct link_item
+struct visit_item
 {
-    int src;
-    int dest;
+    int visit_id;
+    int from;
 };
 
-struct link_item link_list[MAX_LINKS];
-int nlinks;
+struct visit_item visits[MAX_COMPONENTS];
+
+#define NPATHS  4
 
 static void add_to_index(char *line);
 static void mark_links(char *line);
 static int find_in_index(const char *name);
+static bool find_way_to_node(int start, int target, bool allow_direct);
+static bool can_be_reached_n_ways(int start, int target);
+
+#ifdef DEBUG_PRINT
 static void print_matrix();
-static int count_visitable();
-static void build_linklist();
 static void print_dot();
+#endif
 
 int main(void)
 {
@@ -60,48 +67,58 @@ int main(void)
     }
     fclose(input);
 
-    //print_dot();
-    //return 0;
-    build_linklist();
-    //print_links();
+    #ifdef DEBUG_PRINT
+    print_dot();
+    print_matrix();
+    #endif
 
-    printf("# links: %d\n", nlinks);
-
-    //int total = count_visitable();
-
-    long progress = 0;
-    // for (int r = 0; r < ncomponents; ++r)
-    // {
-    //     for (int c = r + 1; c < ncomponents; ++c)
-    //     {
-    //         total+=links[r][c];
-    //     }
-    // }
-
-    for (int a = 0; a < nlinks; ++a)
+    int src = 0; // pick start
+    components[src].group = 1;
+    for (int dest = src + 1; dest < ncomponents; ++dest)
     {
-        struct link_item *la = &link_list[a];
+        bool reachable = can_be_reached_n_ways(src, dest);
 
-        //cut link
-        links[la->src][la->dest] = false;
-        links[la->dest][la->src] = false;
-
-        int visitable = count_visitable();
-        if (visitable != ncomponents)
+        if (reachable)
         {
-            printf("cut %s/%s\n", components[la->src].name, components[la->dest].name);
-            printf("Clusters: %d %d\n", visitable, ncomponents - visitable);
-            printf("Result: %d\n", visitable * (ncomponents - visitable));
-            exit(0);
+            #ifdef DEBUG_PRINT
+            printf("Reachable\n");
+            #endif
+            components[dest].group = 1;
         }
-
-        // put it back
-        links[la->src][la->dest] = true;
-        links[la->dest][la->src] = true;
+        else
+        {
+            #ifdef DEBUG_PRINT
+            printf("Unreachable\n");
+            #endif
+            components[dest].group = 2;
+        }
     }
-    //printf("Result: %ld\n", nlinks);
 
+    int count1 = 0;
+    int count2 = 0;
 
+    for (int n = 0; n < ncomponents; ++n)
+    {
+        switch (components[n].group)
+        {
+        case 1:
+            ++count1;
+            break;
+        case 2:
+            ++count2;
+            break;
+        default:
+            printf("WTF?\n");
+            exit(1);
+        }
+    }
+
+    printf("%d * %d\n", count1, count2);
+
+    int result = count1 * count2;
+
+    // Result: 582590
+    printf("Result: %d\n", result);
     return 0;
 }
 
@@ -117,6 +134,7 @@ static void add_to_index(char *line)
         {
             assert(strlen(token) < MAX_NAME);
             strcpy(components[ncomponents].name, token);
+            components[ncomponents].group = 0;
             ++ncomponents;
         }
 
@@ -155,52 +173,86 @@ static int find_in_index(const char *name)
 }
 
 
-int visits[MAX_COMPONENTS];
-static int count_visitable()
+bool blocked[MAX_COMPONENTS];
+
+static bool can_be_reached_n_ways(int start, int target)
+{
+    memset(blocked, 0, sizeof(blocked));
+
+    #ifdef DEBUG_PRINT
+    printf("%s -> %s\n", components[start].name, components[target].name);
+    #endif
+
+    for (int n = 0; n < NPATHS; ++n)
+    {
+        bool arrived = find_way_to_node(start, target, n == 0);
+
+        if (!arrived)
+            return false;
+
+        #ifdef DEBUG_PRINT
+        printf("[%s]", components[target].name);
+        #endif
+
+        for (int s = visits[target].from; s != start; s = visits[s].from)
+        {
+            blocked[s] = true;
+            #ifdef DEBUG_PRINT
+            printf(" <- %s", components[s].name);
+            #endif
+        }
+
+        #ifdef DEBUG_PRINT
+        printf(" <- [%s]\n", components[start].name);
+        #endif
+    }
+
+    return true;
+}
+
+static bool find_way_to_node(int start, int target, bool allow_direct)
 {
     memset(visits, 0, sizeof(visits));
-    visits[0] = 1;
+    visits[start].visit_id = 1;
 
-    int old_visited = 0;
-    int nvisited = 1;
-    for (int visit_id = 1; ; ++visit_id)
+    bool has_visitable = true;
+    for (int visit_id = 1; has_visitable; ++visit_id)
     {
+        has_visitable = false;
         for (int src = 0; src < ncomponents; ++src)
         {
-            if (visits[src] == visit_id)
+            if (visits[src].visit_id == visit_id)
             {
                 for (int dest = 0; dest < ncomponents; ++dest)
                 {
-                    if (links[src][dest] && visits[dest] == 0)
+                    if (links[src][dest])
                     {
-                        visits[dest] = visit_id + 1;
-                        ++nvisited;
+                        if (target == dest && visit_id == 1 && !allow_direct)
+                            continue;
+                        if (blocked[dest])
+                            continue;
+
+                        
+                        if (visits[dest].visit_id == 0)
+                        {
+                            visits[dest].visit_id = visit_id + 1;
+                            visits[dest].from = src;
+                            has_visitable = true;
+
+                            if (target == dest)
+                                return true;
+                        }
                     }
                 }
             }
         }
-        if (old_visited == nvisited) return nvisited;
-        old_visited = nvisited;
     }
+
+    return false;
 }
 
-static void build_linklist()
-{
-    nlinks = 0;
-    for (int r = 0; r < ncomponents; ++r)
-    {
-        for (int c = r + 1; c < ncomponents; ++c)
-        {
-            if (links[r][c])
-            {
-                assert(nlinks < MAX_LINKS);
-                link_list[nlinks].src = r;
-                link_list[nlinks].dest = c;
-                ++nlinks;
-            }
-        }
-    }
-}
+
+#ifdef DEBUG_PRINT
 
 static void print_matrix()
 {
@@ -240,3 +292,5 @@ static void print_dot()
     }
     printf("}\n");
 }
+
+#endif
