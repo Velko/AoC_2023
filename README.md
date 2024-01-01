@@ -84,7 +84,7 @@ aside as a template/boilerplate project, that I can always use as a starting poi
 Part 1
 ------
 
-First order of business is again parsing the input, but being armed with experiece from Day 2 it did not felt too bad.
+First order of business is again parsing the input, but being armed with experience from Day 2 it did not felt too bad.
 
 The scoring calculation felt a bit awkward until I realized that bit-shifts is what describes it naturally. Let's start
 with value of 1 and shift it left for each winning number.
@@ -179,11 +179,16 @@ The input data was also too small for me to bother with parsing. Just hardcoded 
 Part 2
 ------
 
-Larger numbers suggested that the puzzle was meant to be solved in a different way. I started to think about algebraeic solution,
+Larger numbers suggested that the puzzle was meant to be solved in a different way. I started to think about algebraic solution,
 but after arriving at a quadratic equation felt lazy. Probably I just run the loop from Part 1?
 
 Sure enough, the result was ready in a fraction of a second. Good! Now I have an idea for Day 5 part 2.
 
+Part 2 - continued
+------------------
+
+After some time I felt that I still need to solve the algebraic version. It's an upside-down parabola (think "rainbow"), and previous record sets the
+"horizon". So the result is a difference between the roots of quadratic equation. I came back and rewrote it using the textbook math solution.
 
 
 Day 7
@@ -327,5 +332,110 @@ The amount of data is quite small, I decided to do a brute-force again. Flip eac
 
 Had to do bit of head-scratching, because sometimes it could not found the solution. Turns out - if I flip a cell that does
 not impact the original solution, can still get the original back. Some proper "skip" logic is in order.
+
+Part 2 - continued
+------------------
+
+Some time later I realized that I could replace the standard _strcmp()_ with my own _smudgecmp()_ that returns the number of
+differences found. Now, if I allow at most 1 difference per mirror, it gives me the expected results.
+
+Day 14
+======
+
+Part 1
+------
+
+The solution felt obvious, just model the movement of the rocks and calculate the result.
+
+Part 2
+------
+
+I have to model the movements when platform is tilted elsewhere. There must be a point when movement of the platform returns to
+a state it had before. Then I should be able to skip the repeating cycles and drop right into the final segment of the cycles.
+
+I decided to pack the state of the platform into a smaller representation, where the rock is represented by binary 1 and everything
+else with a 0. This reduced my memory consumption 8 times, but probably I could had done without it anyway. When I later peeked at
+solutions on Reddit, they were using some hashing instead. Still my version works.
+
+Once cycle detection found a state where system has been before, it was a simple matter to skip all the unnecessary cycles and drop
+into the last leg of the iterations. Once finished, just calculate the result same way as in Part 1.
+
+Day 15
+======
+
+Part 1
+------
+
+Since I'm using C language, some of the calculation requirements came naturally:
+* ASCII code _is_ the integer value of character
+* remainder of dividing it by 256 means just storing it into a 8-bit variable
+
+So the calculations were obvious.
+
+Part 2
+------
+
+It was just matter of following the instructions and adjusting the state of the lenses accordingly. That and calculating the result at the end.
+
+Day 16
+======
+
+Part 1
+------
+
+The hard part was splitting of the beam. Until it accrued to me that there's no point of following the beam that has already been at the location,
+moving in the same direction. The tile was energized once, there's nothing new the beam can do.
+
+Part 2
+------
+
+Starting the beam from any edge of the floor? Does this even counts as a brute-forcing, if I'm checking 440 possibilities?
+
+Day 17
+======
+
+Part 1
+------
+
+The easy days are over! A path-finding puzzle has arrived. I was thinking a Dijkstra's algorithm is in order, but those 3 straight steps at most
+threw me off course. I was in a middle of re-inventing the Dijkstra's algorithm (from what I remembered from my university courses), when I took
+a peek at Reddit. Ok, it's Dijkstra, but there's some complicated state. And now I have to implement a _priority queue_. Implemented dumbest thing
+possible (_memmove()_ after each pop and _qsort()_ after each insert), but it worked fine and I got my result.
+
+Funny, the Dijkstra's algorithm was nothing similar to one I remembered from university, but here I have it, at more general form.
+
+Part 2
+------
+
+This did not make much complications. Just add the minimum straight steps and change the turn limit.
+
+Day 18
+======
+
+
+Part 1
+------
+
+The obvious thing was to just follow the digging instructions. It, however, was not clear at which coordinate start the dig. It can be solved by
+following the path once, just calculating the coordinates and recording the min/max ones.
+
+Then start the dig again, but start at the coordinates that leaves 1 step border around the trench. Now, do the floodfill from (0, 0) and everything
+not filled belongs to the pit.
+
+Part 2
+------
+
+The initial idea was to use similar approach as on Day 11 and use virtual coordinates. It would create a ratio-map of what each cell is worth. The
+idea felt sound, but I struggled to implement it properly.
+
+At some point I peeked at Reddit and saw the solution using _Shoelace formula_ along with _Pick's theorem_ as the common solution. Implemented that and
+got my answer. Still, I leaned new things.
+
+Part 2 - continued
+------------------
+
+I, however, did not feel satisfied and felt that my original idea should had also worked. Turned out I was close, but starting to move in wrong direction.
+Sleeping it over helped, and I was able to implement it successfully. Later I learned that the technique is called _Coordinate compression_.
+
 
 
