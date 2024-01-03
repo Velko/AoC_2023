@@ -10,19 +10,20 @@
 #define BUFFER_SIZE     256
 
 #define MAX_COMPONENTS  1600
+#define MAX_LINKS          8
 #define MAX_NAME           4
 
 struct component
 {
     char name[MAX_NAME];
+    int links[MAX_LINKS];
+    int nlinks;
 };
 
 
 struct component components[MAX_COMPONENTS];
 int ncomponents;
 
-
-bool links[MAX_COMPONENTS][MAX_COMPONENTS];
 
 struct visit_item
 {
@@ -34,9 +35,10 @@ struct visit_item visits[MAX_COMPONENTS];
 
 #define NPATHS  4
 
-static void add_to_index(char *line);
-static void mark_links(char *line);
-static int find_in_index(const char *name);
+static void parse_component(char *line);
+static int get_or_add_component(const char *name);
+static void add_link(int src, int dest);
+static void remove_link(int src, int dest);
 static int walk_all_nodes(int start, int *last_visit);
 static void remove_path(int start, int target);
 
@@ -54,15 +56,7 @@ int main(void)
     for (;;)
     {
         if (fgets(line, BUFFER_SIZE, input) == NULL) break;
-        add_to_index(line);
-    }
-
-    fseek(input, 0, SEEK_SET);
-    memset(links, 0, sizeof(links));
-    for (;;)
-    {
-        if (fgets(line, BUFFER_SIZE, input) == NULL) break;
-        mark_links(line);
+        parse_component(line);
     }
     fclose(input);
 
@@ -100,44 +94,43 @@ int main(void)
 }
 
 
-static void add_to_index(char *line)
+static void parse_component(char *line)
 {
     char *sp;
     char *token = strtok_r(line, ": \n", &sp);
-    while (token)
-    {
-        int idx = find_in_index(token);
-        if (idx == -1)
-        {
-            assert(strlen(token) < MAX_NAME);
-            strcpy(components[ncomponents].name, token);
-            ++ncomponents;
-        }
+    int src = get_or_add_component(token);
 
-        token = strtok_r(NULL, " \n", &sp);
-    }
-}
-
-static void mark_links(char *line)
-{
-    char *sp;
-    char *token = strtok_r(line, ": \n", &sp);
-    int src = find_in_index(token);
-    assert (src >=0 && src < MAX_COMPONENTS);
     token = strtok_r(NULL, " \n", &sp);
     while (token)
     {
-        int dest = find_in_index(token);
-        assert (dest >=0 && dest < MAX_COMPONENTS);
-
-        links[src][dest] = true;
-        links[dest][src] = true;
+        int dest = get_or_add_component(token);
+        add_link(src, dest);
+        add_link(dest, src);
 
         token = strtok_r(NULL, " \n", &sp);
     }
 }
 
-static int find_in_index(const char *name)
+static void add_link(int src, int dest)
+{
+    assert(components[src].nlinks < MAX_LINKS);
+    components[src].links[components[src].nlinks] = dest;
+    ++components[src].nlinks;
+}
+
+static void remove_link(int src, int dest)
+{
+    for (int i = 0; i < components[src].nlinks; ++i)
+    {
+        if (components[src].links[i] == dest)
+        {
+            components[src].links[i] = -1;
+            return;
+        }
+    }
+}
+
+static int get_or_add_component(const char *name)
 {
     for (int i = 0; i < ncomponents; ++i)
     {
@@ -145,7 +138,13 @@ static int find_in_index(const char *name)
             return i;
     }
 
-    return -1;
+    assert(ncomponents < MAX_COMPONENTS);
+    assert(strlen(name) < MAX_NAME);
+    strcpy(components[ncomponents].name, name);
+    components[ncomponents].nlinks = 0;
+    int ni = ncomponents;
+    ++ncomponents;
+    return ni;
 }
 
 
@@ -153,8 +152,8 @@ static void remove_path(int start, int target)
 {
     for (int s = target; s != start; s = visits[s].from)
     {
-        links[s][visits[s].from] = false;
-        links[visits[s].from][s] = false;
+        remove_link(s, visits[s].from);
+        remove_link(visits[s].from, s);
 
         #ifdef DEBUG_PRINT
         if (s == target)
@@ -183,9 +182,10 @@ static int walk_all_nodes(int start, int *last_visit)
         {
             if (visits[src].visit_id == visit_id)
             {
-                for (int dest = 0; dest < ncomponents; ++dest)
+                for (int i = 0; i < components[src].nlinks; ++i)
                 {
-                    if (links[src][dest])
+                    int dest = components[src].links[i];
+                    if (dest != -1)
                     {
                         if (visits[dest].visit_id == 0)
                         {
