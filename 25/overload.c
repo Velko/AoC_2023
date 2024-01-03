@@ -15,7 +15,6 @@
 struct component
 {
     char name[MAX_NAME];
-    int group;
 };
 
 
@@ -38,8 +37,8 @@ struct visit_item visits[MAX_COMPONENTS];
 static void add_to_index(char *line);
 static void mark_links(char *line);
 static int find_in_index(const char *name);
-static bool find_way_to_node(int start, int target, bool allow_direct);
-static bool can_be_reached_n_ways(int start, int target);
+static int walk_all_nodes(int start, int *last_visit);
+static void remove_path(int start, int target);
 
 #ifdef DEBUG_PRINT
 static void print_matrix();
@@ -54,7 +53,7 @@ int main(void)
     ncomponents = 0;
     for (;;)
     {
-        if (fgets(line, BUFFER_SIZE, input) == NULL) break; 
+        if (fgets(line, BUFFER_SIZE, input) == NULL) break;
         add_to_index(line);
     }
 
@@ -62,7 +61,7 @@ int main(void)
     memset(links, 0, sizeof(links));
     for (;;)
     {
-        if (fgets(line, BUFFER_SIZE, input) == NULL) break; 
+        if (fgets(line, BUFFER_SIZE, input) == NULL) break;
         mark_links(line);
     }
     fclose(input);
@@ -72,50 +71,28 @@ int main(void)
     print_matrix();
     #endif
 
-    int src = 0; // pick start
-    components[src].group = 1;
-    for (int dest = src + 1; dest < ncomponents; ++dest)
-    {
-        bool reachable = can_be_reached_n_ways(src, dest);
+    int nvisited = 0;
 
-        if (reachable)
-        {
-            #ifdef DEBUG_PRINT
-            printf("Reachable\n");
-            #endif
-            components[dest].group = 1;
-        }
-        else
-        {
-            #ifdef DEBUG_PRINT
-            printf("Unreachable\n");
-            #endif
-            components[dest].group = 2;
-        }
+    /* This assumes that path found by BFS to the furthest node from *start* "crosses the bridge" at least once.
+       Removing this path removes a single connection between the 2 subgraphs (along with bunch of other links, we do
+       not care much about). Repeating this 2 more times should remove other 2 bridges. Other nodes that were removed
+       reduces connectivity a bit, but nodes should still remain reachable.
+
+       If, for some reason, this is not true, another node should be picked (currently this is not addressed in code).
+
+       Then we're doing one last walk to discover how many nodes now are reachable from the *start*.
+     */
+    int start = 0;
+    for (int i = 0; i < NPATHS; ++i)
+    {
+        int last;
+        nvisited = walk_all_nodes(start, &last);
+        remove_path(start, last);
     }
 
-    int count1 = 0;
-    int count2 = 0;
+    printf("%d * %d\n", nvisited, ncomponents - nvisited);
 
-    for (int n = 0; n < ncomponents; ++n)
-    {
-        switch (components[n].group)
-        {
-        case 1:
-            ++count1;
-            break;
-        case 2:
-            ++count2;
-            break;
-        default:
-            printf("WTF?\n");
-            exit(1);
-        }
-    }
-
-    printf("%d * %d\n", count1, count2);
-
-    int result = count1 * count2;
+    int result = nvisited * (ncomponents - nvisited);
 
     // Result: 582590
     printf("Result: %d\n", result);
@@ -134,7 +111,6 @@ static void add_to_index(char *line)
         {
             assert(strlen(token) < MAX_NAME);
             strcpy(components[ncomponents].name, token);
-            components[ncomponents].group = 0;
             ++ncomponents;
         }
 
@@ -173,52 +149,36 @@ static int find_in_index(const char *name)
 }
 
 
-bool blocked[MAX_COMPONENTS];
-
-static bool can_be_reached_n_ways(int start, int target)
+static void remove_path(int start, int target)
 {
-    memset(blocked, 0, sizeof(blocked));
-
-    #ifdef DEBUG_PRINT
-    printf("%s -> %s\n", components[start].name, components[target].name);
-    #endif
-
-    for (int n = 0; n < NPATHS; ++n)
+    for (int s = target; s != start; s = visits[s].from)
     {
-        bool arrived = find_way_to_node(start, target, n == 0);
-
-        if (!arrived)
-            return false;
+        links[s][visits[s].from] = false;
+        links[visits[s].from][s] = false;
 
         #ifdef DEBUG_PRINT
-        printf("[%s]", components[target].name);
-        #endif
-
-        for (int s = visits[target].from; s != start; s = visits[s].from)
-        {
-            blocked[s] = true;
-            #ifdef DEBUG_PRINT
+        if (s == target)
+            printf("[%s]", components[s].name);
+        else
             printf(" <- %s", components[s].name);
-            #endif
-        }
-
-        #ifdef DEBUG_PRINT
-        printf(" <- [%s]\n", components[start].name);
         #endif
     }
 
-    return true;
+    #ifdef DEBUG_PRINT
+    printf(" <- [%s]\n", components[start].name);
+    #endif
 }
 
-static bool find_way_to_node(int start, int target, bool allow_direct)
+static int walk_all_nodes(int start, int *last_visit)
 {
     memset(visits, 0, sizeof(visits));
     visits[start].visit_id = 1;
+    int nvisited = 1;
 
-    bool has_visitable = true;
-    for (int visit_id = 1; has_visitable; ++visit_id)
+    int old_nvisited = 0;
+    for (int visit_id = 1; old_nvisited != nvisited; ++visit_id)
     {
-        has_visitable = false;
+        old_nvisited = nvisited;
         for (int src = 0; src < ncomponents; ++src)
         {
             if (visits[src].visit_id == visit_id)
@@ -227,20 +187,12 @@ static bool find_way_to_node(int start, int target, bool allow_direct)
                 {
                     if (links[src][dest])
                     {
-                        if (target == dest && visit_id == 1 && !allow_direct)
-                            continue;
-                        if (blocked[dest])
-                            continue;
-
-                        
                         if (visits[dest].visit_id == 0)
                         {
                             visits[dest].visit_id = visit_id + 1;
                             visits[dest].from = src;
-                            has_visitable = true;
-
-                            if (target == dest)
-                                return true;
+                            *last_visit = dest;
+                            ++nvisited;
                         }
                     }
                 }
@@ -248,7 +200,7 @@ static bool find_way_to_node(int start, int target, bool allow_direct)
         }
     }
 
-    return false;
+    return nvisited;
 }
 
 
