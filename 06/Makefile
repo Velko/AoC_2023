@@ -9,6 +9,6 @@ equations.pdf: equations.tex
 	pdflatex equations.tex
 
 clean:
-	rm -rf *.o $(NAME)
+	rm -rf *.o $(NAME) *.aux *.log *.pdf
 
 
