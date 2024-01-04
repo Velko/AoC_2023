@@ -15,7 +15,7 @@ int main(void)
 
     for (;;)
     {
-        if (fgets(line, BUFFER_SIZE, input) == NULL) break; 
+        if (fgets(line, BUFFER_SIZE, input) == NULL) break;
         total += parse_line(line);
         //break;
     }
@@ -36,7 +36,7 @@ static int parse_line(char *line)
 
     int max_red = 0, max_green = 0, max_blue = 0;
 
-    while (game_token = strtok_r(NULL, ";", &outer_savep))
+    while ((game_token = strtok_r(NULL, ";", &outer_savep)))
     {
         char *pull_token = strtok_r(game_token, ",", &inner_savep);
         while (pull_token)

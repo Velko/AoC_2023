@@ -29,7 +29,7 @@ static enum direction turn(char tile, enum direction moving_to);
 static int walk_path_and_copy(int start_row, int start_col, enum direction start_dir);
 static void walk_path_and_mark(int start_row, int start_col, enum direction start_dir);
 static void mark_inside(int row, int col, int dir);
-static int flood_inside();
+static int flood_inside(int num_rows);
 static void convert_print(const char *str);
 
 int main(void)

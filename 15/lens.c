@@ -2,6 +2,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+//#define DEBUG_PRINT
+
 #define BUFFER_SIZE     24 * 1024       // the input is one huge string
 
 char line[BUFFER_SIZE];
@@ -23,8 +25,11 @@ static int calc_hash(const char *str);
 static char parse_lens(char *str, struct lens *lens);
 static void upsert_lens(struct lens *box, struct lens *new_lens);
 static void remove_lens(struct lens *box, const char *label);
-static void print_boxes();
 static long calculate_power();
+
+#ifdef DEBUG_PRINT
+static void print_boxes();
+#endif
 
 int main(void)
 {
@@ -59,7 +64,9 @@ int main(void)
             break;
         }
 
-        //print_boxes();
+        #ifdef DEBUG_PRINT
+        print_boxes();
+        #endif
 
         token = strtok_r(NULL, ",\n", &savep);
     }
@@ -142,6 +149,7 @@ static void remove_lens(struct lens *box, const char *label)
     }
 }
 
+#ifdef DEBUG_PRINT
 static void print_boxes()
 {
     for (int b = 0; b < 256; ++b)
@@ -156,6 +164,7 @@ static void print_boxes()
         }
     }
 }
+#endif
 
 static long calculate_power()
 {

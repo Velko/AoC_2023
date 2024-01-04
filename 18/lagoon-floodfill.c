@@ -4,6 +4,8 @@
 #include <assert.h>
 #include <stdbool.h>
 
+//#define DEBUG_PRINT
+
 #define BUFFER_SIZE     256
 
 #define MAX_INSTRUCTIONS    700
@@ -49,8 +51,11 @@ static int ruler_find_mark(struct ruler *ruler, long value);
 static void ruler_add_mark(struct ruler *ruler, long value);
 static void ruler_init(struct ruler *ruler);
 static void ruler_sort(struct ruler *ruler);
-static void ruler_print(struct ruler *ruler);
 static long ruler_mark_increment(struct ruler *ruler, int mark);
+
+#ifdef DEBUG_PRINT
+static void ruler_print(struct ruler *ruler);
+#endif
 
 int main(void)
 {
@@ -59,7 +64,7 @@ int main(void)
 
     for (ninstructions = 0;; ++ninstructions)
     {
-        if (fgets(line, BUFFER_SIZE, input) == NULL) break; 
+        if (fgets(line, BUFFER_SIZE, input) == NULL) break;
         parse_line(line);
     }
     fclose(input);
@@ -187,12 +192,14 @@ static int ruler_find_mark(struct ruler *ruler, long value)
     return p - ruler->marks;
 }
 
+#ifdef DEBUG_PRINT
 static void ruler_print(struct ruler *ruler)
 {
     for (int i = 0; i < ruler->nmarks; ++i)
         printf("%ld, ", ruler->marks[i]);
     printf("\n");
 }
+#endif
 
 static int cmp_long(const void *a, const void *b)
 {
@@ -243,7 +250,7 @@ static void mark_border()
         case 'D':
         case '1':
             y += instructions[i].steps;
-            new_row = ruler_find_mark(&ruler_y, y); 
+            new_row = ruler_find_mark(&ruler_y, y);
             //printf("%ld %d\n", y, new_row);
             for (int s = row; s <= new_row; ++s)
             {
@@ -253,7 +260,7 @@ static void mark_border()
         case 'U':
         case '3':
             y -= instructions[i].steps;
-            new_row = ruler_find_mark(&ruler_y, y); 
+            new_row = ruler_find_mark(&ruler_y, y);
             //printf("%ld %d\n", y, new_row);
             for (int s = row; s >= new_row; --s)
             {
@@ -263,7 +270,7 @@ static void mark_border()
         case 'R':
         case '0':
             x += instructions[i].steps;
-            new_col = ruler_find_mark(&ruler_x, x); 
+            new_col = ruler_find_mark(&ruler_x, x);
             //printf("%ld %d\n", x, new_col);
             for (int s = col; s <= new_col; ++s)
             {
@@ -273,7 +280,7 @@ static void mark_border()
         case 'L':
         case '2':
             x -= instructions[i].steps;
-            new_col = ruler_find_mark(&ruler_x, x); 
+            new_col = ruler_find_mark(&ruler_x, x);
             //printf("%ld %d\n", x, new_col);
             for (int s = col; s >= new_col; --s)
             {
