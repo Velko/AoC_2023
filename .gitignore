@@ -10,3 +10,4 @@ obj/
 *.pdf
 *.svg
 *.zip
+/inputs

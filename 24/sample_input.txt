@@ -1,0 +1,1 @@
+../inputs/sample_24.txt
