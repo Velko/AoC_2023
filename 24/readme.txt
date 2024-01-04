@@ -1,0 +1,1 @@
+../puzzles/24.txt

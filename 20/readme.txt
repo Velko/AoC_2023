@@ -1,0 +1,1 @@
+../puzzles/20.txt
