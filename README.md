@@ -1,15 +1,18 @@
 Advent of Code 2023
 ===================
 
-These are my notes about solving the programming puzzles in Advent of Code 2023.
+These are my notes about solving the programming puzzles in [Advent of Code 2023](https://adventofcode.com/2023).
 
-Little craving for oldschool pushed me to pick C language as primary tool. Additional limitations
-I'd like to keep is not using external libraries. Still, I do not place hard limitations on that,
-could use whatever works to get the result.
+Craving for oldschool pushed me to pick C language as primary tool. Additional limitations I'd like
+to keep is not using external libraries. Also it would be nice to avoid dynamic memory allocation.
+Not that I couldn't handle that, but I hope it won't be necessarry.
+
+However, I do not place hard limitations on that, could use whatever works to get the result.
 
 This is my 1st time doing Advent of Code, so I'm not exactly sure how it will go.
 
-Started a bit late, had to catch up few days in the beginning.
+Started a bit late (finished my Exercism  [#12in23 challenge](https://exercism.org/blog/december-diversions) first),
+had to catch up few days in the beginning.
 
 
 Day 1
@@ -106,7 +109,7 @@ Part 2
 
 This stirs things up, at first I thought that some kind of priority queue will be required. Working in plain C it is not
 an easy thing to implement (15 days later I had to do it anyway). I'm sure there is a lib for that, but I'd like to avoid
-that.
+it.
 
 Thinking further, the additional copies is just a number. There is no need to create additional "card objects" that are
 identical to the original. Start with the count of 1 and add whatever additional copies were won.
@@ -180,7 +183,7 @@ Part 1
 ------
 
 The description of the Day 6 described a brute-force algorithm for the calculations. Since the input values were small, I
-did not bother with more clever solutions. Just checked all the possibilities.
+did not bother with clever solutions. Just checked all the possibilities.
 
 The input data was also too small for me to bother with parsing. Just hardcoded the values. Looking back, I probably should
 had parsed it anyway. I had to do a lot of ``git rebase`` to remove it when I decided that I want to publish the repo.
@@ -210,15 +213,15 @@ Day 7
 Part 1
 ------
 
-I had some experience from Exercism with Poker-style calculations, so the combination detection was not new for me: count the cards
-of each value and order the groups descending by their size. Now you can check the numbers of first top groups to determine
-the combination.
+I had some experience from [Exercism](https://exercism.org/tracks/csharp/exercises/poker/iterations) with Pokers, so the combination detection
+was not new for me: count the cards of each value and order the groups descending by their size. Now you can check the numbers of first top
+groups to determine the combination.
 
 The rest of the comparison felt a bit off. Instead of trying to look for strongest cards, it has to compare them in the input order.
 This was probably the camel-related adjustment.
 
-For sorting I pulled out the Standard Library function qsort(), had to supply it with my own custom comparer functions. I could do
-a bubble-sort instead, but I feel fine about using function from LibC. I'm using scanf(), strtok() and others anyway.
+For sorting I pulled out the Standard Library function _qsort()_, had to supply it with my own custom comparer functions. I could do
+a bubble-sort instead, but I feel fine about using function from LibC. I'm using _scanf()_, _strtok()_ and others anyway.
 
 Part 2
 ------
@@ -258,7 +261,7 @@ Part 2 - Use the force, again
 
 Now that I knew the final answer, I can measure how long would it take to get there by raw computing power.
 Made a lot more optimizations and changed the condition of completion. Instead of waiting for all 6 paths to
-converge, what about just 4 or 5? 
+converge, what about just 4 or 5?
 
 Turns out, 4 out of 6 paths converge in about 9 seconds. Getting to 5 / 6 takes a little over 10 minutes. The
 fastest I managed to achieve was 323,246,164 steps/sec on hardware I have. Quite impressive I think.
@@ -384,12 +387,13 @@ a valid solution for the group is found, recurse for the next group. Once reache
 back if it matches or not.
 
 When scanning the template, there are 4 possible options:
+
     * found '.' - just scan further
     * found '#' - make a "hard match" if the group can be placed and subsequent recursion is successful
     * found '?' - make a "soft match" - try to place a group, but failing to do that just continue to next
     * reached end of template - return what's collected so far
 
-When there are no more groups to check, one should check if the end of template requires any '#', or the remainder
+When there are no more groups to check, one should verify if the end of template requires any '#', or the remainder
 can be filled by '.'. Former means failure, latter - successful match.
 
 It took a lot of debugging to get everything right, but at the end I got it to the point where it was able to solve
@@ -399,12 +403,13 @@ Now it should be able to solve Part 2 as well? Added the "unfolding" logic, ran 
 then it got stuck. Is there a bug? Or it's just a complicated case and takes a while?
 
 After had checked everything again, I did not find any possible infinite loops, it must be complicated case. For that
-line there was 64 solutions in Part 1, so it must be pretty complicated. Should I just wait or think of better solution?
+line there was 64 solutions in Part 1, so it must be pretty hard. Should I just wait or think of better solution?
 
 Headed over to Reddit and saw that everybody talks about technique called memoization, decided to check out what that
 is about. Given that nothing else changes, if you call a function with same parameters, it should return same result.
 
-What do I pass to my recursive function? Reconstructed string, index where to continue and group. Do I need to hash
+The standard technique appears to calculate a hash of all input parameters and then use it as a key in cache. What do
+I pass to my recursive function? Reconstructed string, index where to continue and group. Do I need to hash
 them all together and use as a key? In C? Seriously?
 
 Wait, do I need to pass the reconstructed string, I'm not looking at any position smaller than the starting index.
@@ -414,8 +419,8 @@ never actually read anything from it. I must be able to eliminate that.
 The reconstructed string was an invaluable resource while I was debugging the algorithm, but now it's time to say
 goodbye. Removed, everything still works.
 
-Now I', passing in just a constant string, starting index and group. This looks more memo-izable. I created a 2D array
-addressable by starting indices and group indices. Fill it with -1 and call the function only when there's no result
+Now I'm, passing in just a constant string, starting index and group. This looks more memo-izable. I created a 2D array
+addressable by starting indices and group indices. Filled it with -1 and called the function only when there's no result
 from previous call.
 
 This time it finished instantly.
@@ -428,8 +433,8 @@ Part 1
 ------
 
 After loading the input into array of strings, implemented a row-by-row mirror scanning. It's easier, because I can use
-standard strcmp() function for that. What about columns? Felt lazy and wrote routine to transpose the array. Now the columns
-are converted to rows and I can reuse same row-by-row scanner.
+standard _strcmp()_ function for that. What about columns? Felt lazy and wrote routine to transpose the array instead.
+Now the columns are converted to rows (and vice versa) and I can reuse same row-by-row scanner.
 
 Part 2
 ------
@@ -437,13 +442,14 @@ Part 2
 The amount of data is quite small, I decided to go for a brute-force. Flip each cell and check with the previous function.
 
 Had to do bit of head-scratching, because sometimes it could not found the solution. Turns out - if I flip a cell that does
-not impact the original solution, can still get the original back. Some proper "skip" logic is in order.
+not impact the original solution, can still get the original back. Some proper "skip" logic was required.
 
 Part 2 - continued
 ------------------
 
 Some time later I realized that I could replace the standard _strcmp()_ with my own _smudgecmp()_ that returns the number of
-differences found. Now, if I allow at most 1 difference per mirror, it gives me the expected results.
+differences found. Now, if I allow at most 1 difference per mirror, it gives me the expected results. No need for brute-force
+anymore.
 
 Day 14
 ======
@@ -473,8 +479,9 @@ Part 1
 ------
 
 Since I'm using C language, some of the calculation requirements came naturally:
+
 * ASCII code _is_ the integer value of character
-* remainder of dividing it by 256 means just storing it into a 8-bit variable
+* remainder of dividing it by 256 means just storing it into an 8-bit variable
 
 So the calculations were obvious.
 
@@ -505,9 +512,10 @@ Part 1
 
 The easy days are over! A path-finding puzzle has arrived. I was thinking a Dijkstra's algorithm is in order, but those 3 straight steps at most
 threw me off course. I was in a middle of re-inventing the Dijkstra's algorithm (from what I remembered from my university courses), when I took
-a peek at Reddit. Ok, it's Dijkstra, but there's some complex state. 
+a peek at Reddit. Ok, it's Dijkstra, but there's some complex state.
 
-And now I have to implement a _priority queue_. Implemented dumbest thing possible: _memmove()_ after each pop and _qsort()_ after each insert, but it worked (albeit was not as quick as I'd like to) and I got my result.
+And now I have to implement a _priority queue_. Implemented dumbest thing possible: _memmove()_ after each pop and _qsort()_ after each insert, but
+it worked (albeit was not as quick as I'd like to) and I got my result.
 
 Funny, the Dijkstra's algorithm was nothing similar to one I remembered from university, but here I have it, at more general form.
 
@@ -515,6 +523,15 @@ Part 2
 ------
 
 This did not make much complications. Just add the minimum straight steps and change the turn limit.
+
+Continued
+---------
+
+I could not stand my _dumbest possible_ implementation of Priority Queue and replaced it with a c bucket + circular buffer based one. Probably not the
+most memory conserving one, but performance improvements were significant.
+
+Compromise between memory consumption and performance would probably be something Binary Heap based, but at the moment I do not have a full, stand-alone
+implementation of this data structure to paste it in.
 
 Day 18
 ======
@@ -524,10 +541,10 @@ Part 1
 ------
 
 The obvious thing was to just follow the digging instructions. It, however, was not clear at which coordinate start the dig. It can be solved by
-following the path once, just calculating the coordinates and recording the min/max ones.
+following the path once, only calculating the coordinates and recording the min/max ones.
 
-Then start the dig again, but start at the coordinates that leaves 1 step border around the trench. Now, do the floodfill from (0, 0) and everything
-not filled belongs to the pit.
+Then start the dig again, at the coordinates that leaves 1 step border around the trench. Now, do the floodfill from (0, 0) and everything not filled
+belongs to the pit.
 
 Part 2
 ------
@@ -541,6 +558,6 @@ got my answer. Still, I leaned new things.
 Part 2 - continued
 ------------------
 
-I, however, did not feel satisfied and felt that my original idea should had also worked. Turned out I was close, but starting to move in wrong direction.
+I, however, did not feel satisfied and felt that my original idea should had also worked. Turned out I was close, but started to move in wrong direction.
 Sleeping it over helped, and I was able to implement it successfully. Later I learned that the technique is called _Coordinate compression_.
 
