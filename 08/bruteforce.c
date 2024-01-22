@@ -60,17 +60,16 @@ int main(void)
         for (int s = 0; s < instr_len && paths_match; ++s)
         {
             int *map = step_map[(int)instructions[s]];
-            paths_match = 4; //NPATHS;  // reduce value for small-scale performance test
+            paths_match = NPATHS;  // reduce value for small-scale performance test
             for (int p = 0; p < NPATHS; ++p)
             {
                 locations[p] = map[locations[p]];
-                paths_match -= locations[p] < NPATHS;
+                paths_match -= locations[p] < NPATHS; // location indices are re-ordered so that '??Z' are < 6
             }
             ++nsteps;
         }
     }
 
-    // part1:  18157
     printf("Result: %ld\n", nsteps);
 
     return 0;
